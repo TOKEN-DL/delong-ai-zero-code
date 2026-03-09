@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: delong-ai-zero-code
+server:
+  port: 8124
+  servlet:
+    context-path: /api
+
+
+
+springdoc:
+  group-configs:
+      - group: 'default'
+        packages-to-scan: com.token.delongaizerocode.controller
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+
+
