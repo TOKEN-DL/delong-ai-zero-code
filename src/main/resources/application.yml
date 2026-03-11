@@ -1,6 +1,13 @@
 spring:
   application:
     name: delong-ai-zero-code
+
+  #mysql
+  datasource:
+    url: jdbc:mysql://sh-cynosdbmysql-grp-8voigaj4.sql.tencentcdb.com:20753/delong_ai_zero_code
+    username: user
+    password: Cao@123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
 server:
   port: 8124
   servlet:
