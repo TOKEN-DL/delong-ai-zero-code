@@ -1,9 +1,11 @@
 package com.token.delongaizerocode.common;
 
 import com.token.delongaizerocode.exception.ErrorCode;
+import lombok.Data;
 
 import java.io.Serializable;
 
+@Data
 public class BaseResponse<T> implements Serializable {
 
     private int code;
