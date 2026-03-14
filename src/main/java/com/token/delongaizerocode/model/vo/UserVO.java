@@ -4,6 +4,7 @@ package com.token.delongaizerocode.model.vo;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @Data
 public class UserVO implements Serializable {
@@ -37,6 +38,13 @@ public class UserVO implements Serializable {
      * 用户角色： user , admin
      */
     private String userRole;
+
+    /**
+     * 创建时间
+     */
+    private LocalDateTime createTime;
+
+
 
     public static final long serialVersionUID = 1L;
 }
