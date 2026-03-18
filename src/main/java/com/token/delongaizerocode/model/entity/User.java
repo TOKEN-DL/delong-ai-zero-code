@@ -1,4 +1,4 @@
-package com.token.delongaizerocode.entity;
+package com.token.delongaizerocode.model.entity;
 
 import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;

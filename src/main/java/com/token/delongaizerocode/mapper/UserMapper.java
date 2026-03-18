@@ -1,7 +1,7 @@
 package com.token.delongaizerocode.mapper;
 
 import com.mybatisflex.core.BaseMapper;
-import com.token.delongaizerocode.entity.User;
+import com.token.delongaizerocode.model.entity.User;
 
 /**
  *  映射层。

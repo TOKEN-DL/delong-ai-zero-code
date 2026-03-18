@@ -2,13 +2,12 @@ package com.token.delongaizerocode.service;
 
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
-import com.token.delongaizerocode.entity.User;
+import com.token.delongaizerocode.model.entity.User;
 import com.token.delongaizerocode.model.dto.user.UserQueryRequest;
 import com.token.delongaizerocode.model.vo.LoginUserVO;
 import com.token.delongaizerocode.model.vo.UserVO;
 import jakarta.servlet.http.HttpServletRequest;
 
-import javax.management.Query;
 import java.util.List;
 
 /**

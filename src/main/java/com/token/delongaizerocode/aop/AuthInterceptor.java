@@ -2,7 +2,7 @@ package com.token.delongaizerocode.aop;
 
 
 import com.token.delongaizerocode.annotation.AuthnCheck;
-import com.token.delongaizerocode.entity.User;
+import com.token.delongaizerocode.model.entity.User;
 import com.token.delongaizerocode.exception.BusinessException;
 import com.token.delongaizerocode.exception.ErrorCode;
 import com.token.delongaizerocode.model.enums.UserRoleEnum;

@@ -4,7 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
-import com.token.delongaizerocode.entity.User;
+import com.token.delongaizerocode.model.entity.User;
 import com.token.delongaizerocode.exception.BusinessException;
 import com.token.delongaizerocode.exception.ErrorCode;
 import com.token.delongaizerocode.mapper.UserMapper;
