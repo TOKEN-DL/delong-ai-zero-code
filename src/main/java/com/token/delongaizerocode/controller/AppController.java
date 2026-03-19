@@ -5,6 +5,7 @@ import com.token.delongaizerocode.annotation.AuthnCheck;
 import com.token.delongaizerocode.common.BaseResponse;
 import com.token.delongaizerocode.common.DeleteRequest;
 import com.token.delongaizerocode.common.ResultUtils;
+import com.token.delongaizerocode.constant.AppConstant;
 import com.token.delongaizerocode.constant.UserConstant;
 import com.token.delongaizerocode.exception.BusinessException;
 import com.token.delongaizerocode.exception.ErrorCode;
@@ -19,6 +20,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -81,15 +83,16 @@ public class AppController {
         }
         App app = appService.getById(id);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
-        return ResultUtils.success(appService.getAppVO(app));
+        return ResultUtils.success(appService.getAppVO(app)); // 最后做了脱敏
     }
+
 
     /**
      * 根据id获取应用（管理员）
      * @param id
      * @return
      */
-    @GetMapping("/get/admin")
+    @GetMapping("/admin/get")
     @AuthnCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<App> getAppByIdAdmin(long id) {
         if (id <= 0) {
@@ -136,7 +139,7 @@ public class AppController {
      * @param deleteRequest
      * @return
      */
-    @PostMapping("/delete/admin")
+    @PostMapping("/admin/delete")
     @AuthnCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> deleteAppAdmin(@RequestBody DeleteRequest deleteRequest) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
@@ -174,8 +177,13 @@ public class AppController {
         }
 
         App updateApp = new App();
-        BeanUtils.copyProperties(appUpdateRequest, updateApp);
+//        BeanUtils.copyProperties(appUpdateRequest, updateApp);
+//        updateApp.setId(appUpdateRequest.getId());
+
         updateApp.setId(appUpdateRequest.getId());
+        updateApp.setAppName(appUpdateRequest.getAppName());
+        //设置编辑时间
+        updateApp.setEditTime(LocalDateTime.now());
 
         boolean result = appService.updateById(updateApp);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
@@ -187,7 +195,7 @@ public class AppController {
      * @param appUpdateByAdminRequest
      * @return
      */
-    @PostMapping("/update/admin")
+    @PostMapping("/admin/update")
     @AuthnCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> updateAppAdmin(@RequestBody AppUpdateByAdminRequest appUpdateByAdminRequest) {
         if (appUpdateByAdminRequest == null || appUpdateByAdminRequest.getId() == null) {
@@ -258,7 +266,8 @@ public class AppController {
         }
 
         // 只查询精选应用（优先级不为0）
-        appQueryRequest.setFeatured(true);
+        appQueryRequest.setFeatured(true);    //设置精选值
+        //appQueryRequest.setPriority(AppConstant.GOOD_APP_PRIORITY);
 
         int pageNum = appQueryRequest.getPageNum();
         int pageSize = appQueryRequest.getPageSize();
@@ -283,7 +292,7 @@ public class AppController {
      * @param appQueryRequest 查询请求参数
      * @return
      */
-    @PostMapping("/list/page/admin")
+    @PostMapping("/admin/list/page")
     @AuthnCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Page<AppVO>> listAppByPageAdmin(@RequestBody AppQueryRequest appQueryRequest) {
         if (appQueryRequest == null) {

@@ -71,5 +71,11 @@ public class AppVO implements Serializable {
      */
     private LocalDateTime updateTime;
 
+
+    /**
+     * 创建用户信息
+     */
+    private UserVO user;
+
     public static final long serialVersionUID = 1L;
 }
