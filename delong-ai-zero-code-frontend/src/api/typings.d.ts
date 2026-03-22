@@ -16,13 +16,11 @@ declare namespace API {
   }
 
   type AppAddRequest = {
-    appName?: string
     initPrompt?: string
-    codeGenType?: string
   }
 
   type AppDeployRequest = {
-    appId?: string
+    appId?: number
   }
 
   type AppQueryRequest = {
@@ -30,7 +28,7 @@ declare namespace API {
     pageSize?: number
     sortField?: string
     sortOrder?: string
-    id?: string
+    id?: number
     appName?: string
     cover?: string
     initPrompt?: string
@@ -42,14 +40,14 @@ declare namespace API {
   }
 
   type AppUpdateByAdminRequest = {
-    id?: string
+    id?: number
     appName?: string
     cover?: string
     priority?: number
   }
 
   type AppUpdateRequest = {
-    id?: string
+    id?: number
     appName?: string
   }
 
@@ -129,21 +127,36 @@ declare namespace API {
     message?: string
   }
 
+  type ChatHistory = {
+    id?: number
+    message?: string
+    messageType?: string
+    appId?: number
+    userId?: number
+    createTime?: string
+    updateTime?: string
+    isDelete?: number
+  }
+
   type chatToGenCodeParams = {
-    appId: string
+    appId: number
     message: string
   }
 
   type DeleteRequest = {
-    id?: string
+    id?: number
   }
 
   type getAppByIdAdminParams = {
-    id: string
+    id: number
   }
 
   type getAppByIdParams = {
-    id: string
+    id: number
+  }
+
+  type getInfoParams = {
+    id: number
   }
 
   type getUserByIdParams = {
@@ -174,6 +187,19 @@ declare namespace API {
     optimizeCountQuery?: boolean
   }
 
+  type PageChatHistory = {
+    records?: ChatHistory[]
+    pageNumber?: number
+    pageSize?: number
+    totalPage?: number
+    totalRow?: number
+    optimizeCountQuery?: boolean
+  }
+
+  type pageParams = {
+    page: PageChatHistory
+  }
+
   type PageUserVO = {
     records?: UserVO[]
     pageNumber?: number
@@ -181,6 +207,10 @@ declare namespace API {
     totalPage?: number
     totalRow?: number
     optimizeCountQuery?: boolean
+  }
+
+  type removeParams = {
+    id: number
   }
 
   type ServerSentEventString = true

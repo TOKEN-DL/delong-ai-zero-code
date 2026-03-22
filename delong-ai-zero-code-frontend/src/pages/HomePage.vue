@@ -111,9 +111,7 @@ const handleCreateApp = async () => {
 
   try {
     const res = await addApp({
-      appName: promptInput.value.substring(0, 50),
       initPrompt: promptInput.value,
-      codeGenType: 'web'
     })
 
     if (res.data.code === 0 && res.data.data) {
@@ -130,6 +128,7 @@ const handleCreateApp = async () => {
     }
   } catch (error) {
     message.error('创建应用失败')
+    console.error('Create app error:', error)
   }
 }
 

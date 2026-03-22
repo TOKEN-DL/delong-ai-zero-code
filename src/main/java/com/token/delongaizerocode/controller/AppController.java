@@ -14,6 +14,7 @@ import com.token.delongaizerocode.exception.ThrowUtils;
 import com.token.delongaizerocode.model.dto.app.*;
 import com.token.delongaizerocode.model.entity.App;
 import com.token.delongaizerocode.model.entity.User;
+import com.token.delongaizerocode.model.enums.CodeGenTypeEnum;
 import com.token.delongaizerocode.model.vo.AppVO;
 import com.token.delongaizerocode.service.AppService;
 import com.token.delongaizerocode.service.UserService;
@@ -59,26 +60,25 @@ public class AppController {
         ThrowUtils.throwIf(StringUtils.isBlank(message), ErrorCode.PARAMS_ERROR, "提示词不能为空");
         // 获取当前登录用户
         User loginUser = userService.getLoginUser(request);
+        ThrowUtils.throwIf(loginUser == null,ErrorCode.NOT_LOGIN_ERROR, "用户未登录");
         //调用服务生成代码
         Flux<String> contentFlux = appService.chatToGenCode(appId, message, loginUser);
         return contentFlux
                 .map(chunk -> {
+                    //将内容包装成JSON对象
                     Map<String, String> wrapper = Map.of("d", chunk);
                     String jsonData = JSONUtil.toJsonStr(wrapper);
                     return ServerSentEvent.<String>builder()
                             .data(jsonData)
                             .build();
-
                 })
                 .concatWith(Mono.just(
                         //发送结束时间
                         ServerSentEvent.<String>builder()
                                 .event("done")
                                 .data("")
-                        .build()
-                ))
-
-                ;
+                                .build()
+                ));
 
     }
 
@@ -122,6 +122,8 @@ public class AppController {
         if (appAddRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        String initPrompt = appAddRequest.getInitPrompt();
+        ThrowUtils.throwIf(StringUtils.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化prompt不能为空");
         App app = new App();
         BeanUtils.copyProperties(appAddRequest, app);
 
@@ -133,13 +135,18 @@ public class AppController {
         app.setUserId(loginUser.getId());
 
         // 校验应用数据
-        appService.validApp(app);
+        //appService.validApp(app);
 
         // 设置默认优先级
         if (app.getPriority() == null) {
             app.setPriority(0);
         }
+        //应用名称展示为前12位
+        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
 
+        //暂时设置位多文件生成
+        app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
+        //插入数据库
         boolean result = appService.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(app.getId());

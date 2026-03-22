@@ -15,17 +15,21 @@ import com.token.delongaizerocode.exception.ErrorCode;
 import com.token.delongaizerocode.mapper.AppMapper;
 import com.token.delongaizerocode.model.dto.app.AppQueryRequest;
 import com.token.delongaizerocode.model.entity.User;
+import com.token.delongaizerocode.model.enums.ChatHistoryMessageTypeEnum;
 import com.token.delongaizerocode.model.enums.CodeGenTypeEnum;
 import com.token.delongaizerocode.model.vo.AppVO;
 import com.token.delongaizerocode.model.vo.UserVO;
 import com.token.delongaizerocode.service.AppService;
+import com.token.delongaizerocode.service.ChatHistoryService;
 import com.token.delongaizerocode.service.UserService;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +43,7 @@ import java.util.stream.Collectors;
  * @author <a href="https://github.com/TOKEN-DL">时雨夏树</a>
  */
 @Service
+@Slf4j
 public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppService{
 
     @Resource
@@ -48,6 +53,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
 
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
+
+    @Resource
+    private ChatHistoryService chatHistoryService;
 
 
     @Override
@@ -71,7 +79,31 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
         if (codeGenTypeEnum == null){
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "应用代码生成类型错误 ");
+
         }
+
+        //5.在调用AI前，先保存用户消息到数据库中
+//        chatHistoryService.addChatHistory(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+//
+//        //6.调用AI生成代码（流式）
+//        Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+//        //7. 收集AI响应的内容
+//        StringBuilder aiResponseBuilder = new StringBuilder();
+        //从这里返回
+//        contentFlux.map(chunk -> {
+//            //实时收集AI响应的内容
+//            aiResponseBuilder.append(chunk);
+//            return chunk;
+//
+//        }).doOnComplete(() -> {
+//            //流式返回完成后，保存AI消息到对话历史中
+//            String aiResponse = aiResponseBuilder.toString();
+//            chatHistoryService.addChatHistory(appId, aiResponse, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+//        }).doOnError(error ->{
+//            //如果AI返回失败也要存入数据库
+//            String errorMsg = "AI回复失败：" +error.getMessage();
+//            chatHistoryService.addChatHistory(appId, errorMsg, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+//        });
 
 
         //5.调用AI生成代码
@@ -213,6 +245,31 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         return queryWrapper;
     }
 
+    /**
+     * 删除应用时,关联删除对话历史
+     * @param id
+     * @return
+     */
+    @Override
+    public boolean removeById(Serializable id) {
+        if (id == null){
+            return false;
+        }
+        long appId = Long.parseLong(id.toString());
+        if (appId <= 0){
+            return false;
+        }
+        //先删除关联的对话历史
+        try {
+            chatHistoryService.deleteByAppId(appId);
+        }catch (Exception e){
+            log.error("删除应用关联的对话历史失败： {}" , e.getMessage());
+        }
+
+        //删除应用
+        return super.removeById(id);
+    }
+
     @Override
     public void validApp(App app) {
         if (app == null){
@@ -236,6 +293,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         if (initPrompt.length() > 5000){
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "初始化 Prompt 过长");
         }
+
+
+
+
+
     }
 
 

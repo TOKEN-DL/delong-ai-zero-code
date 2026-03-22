@@ -91,7 +91,7 @@ const originItems = [
   {
     key: '/user/register',
     label: '注册',
-    title: '注册'
+    title: '注册',
   },
   {
     key: '/admin/userManage',
@@ -103,32 +103,36 @@ const originItems = [
     label: '应用管理',
     title: '应用管理',
   },
-  {
-    key: '/test',
-    label: '测试页面',
-    title: '测试页面',
-  },
 
 
 ]
 
-
-//过滤菜单项
+// 过滤菜单项
 const filterMenus = (menus = [] as MenuProps['items']) => {
   return menus?.filter((menu) => {
     const menuKey = menu?.key as string
+
+    // 管理员页面过滤
     if(menuKey?.startsWith('/admin')) {
       const loginUser = loginUserStore.loginUser
       if (!loginUser || loginUser.userRole !== 'admin') {
         return false
       }
     }
-      return true
 
+    // 登录后隐藏注册页面
+    if (menuKey === '/user/register') {
+      const loginUser = loginUserStore.loginUser
+      if (loginUser && loginUser.id) {
+        return false
+      }
+    }
+
+    return true
   })
 }
 
-const menuItems = computed<MenuProps['items']>( () => filterMenus(originItems))
+const menuItems = computed<MenuProps['items']>(() => filterMenus(originItems))
 
 
 // 处理菜单点击
