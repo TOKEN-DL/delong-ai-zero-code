@@ -2,12 +2,14 @@ package com.token.delongaizerocode.model.dto.app;
 
 import com.token.delongaizerocode.common.PageRequest;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 
 /**
  * 应用查询请求
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class AppQueryRequest extends PageRequest implements Serializable {
 
