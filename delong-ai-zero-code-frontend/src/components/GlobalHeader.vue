@@ -98,6 +98,16 @@ const originItems = [
     label: '用户管理',
     title: '用户管理',
   },
+  {
+    key: '/admin/AppManage',
+    label: '应用管理',
+    title: '应用管理',
+  },
+  {
+    key: '/test',
+    label: '测试页面',
+    title: '测试页面',
+  },
 
 
 ]

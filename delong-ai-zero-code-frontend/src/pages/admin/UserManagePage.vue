@@ -48,7 +48,7 @@
 <script lang="ts" setup>
 import { SmileOutlined, DownOutlined } from '@ant-design/icons-vue';
 import {computed, onMounted, reactive, ref} from "vue";
-import {deleteUser, listUserByPage} from "@/api/userController.ts";
+import { deleteAppAdmin, listAppByPageAdmin } from "@/api/appController.ts";
 import {message} from "ant-design-vue";
 import dayjs from "dayjs";
 
@@ -106,7 +106,7 @@ const searchParams = reactive<API.UserQueryRequest>({
 
 //调用后端API获取数据
 const fetchData = async () => {
-  const res = await listUserByPage({
+  const res = await listAppByPageAdmin({
     ...searchParams,
   })
   if (res.data.data){
@@ -148,7 +148,7 @@ const doDelete = async (id: string) => {
   if (!id) {
     return
   }
-  const res = await deleteUser({ id })
+  const res = await deleteAppAdmin({ id })
   if (res.data.code === 0) {
     message.success('删除成功')
     //刷新数据

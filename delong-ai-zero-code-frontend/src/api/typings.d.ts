@@ -22,7 +22,7 @@ declare namespace API {
   }
 
   type AppDeployRequest = {
-    appId?: number
+    appId?: string
   }
 
   type AppQueryRequest = {
@@ -30,7 +30,7 @@ declare namespace API {
     pageSize?: number
     sortField?: string
     sortOrder?: string
-    id?: number
+    id?: string
     appName?: string
     cover?: string
     initPrompt?: string
@@ -42,14 +42,14 @@ declare namespace API {
   }
 
   type AppUpdateByAdminRequest = {
-    id?: number
+    id?: string
     appName?: string
     cover?: string
     priority?: number
   }
 
   type AppUpdateRequest = {
-    id?: number
+    id?: string
     appName?: string
   }
 
@@ -130,20 +130,20 @@ declare namespace API {
   }
 
   type chatToGenCodeParams = {
-    appId: number
+    appId: string
     message: string
   }
 
   type DeleteRequest = {
-    id?: number
+    id?: string
   }
 
   type getAppByIdAdminParams = {
-    id: number
+    id: string
   }
 
   type getAppByIdParams = {
-    id: number
+    id: string
   }
 
   type getUserByIdParams = {
