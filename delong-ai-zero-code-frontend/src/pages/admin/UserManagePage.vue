@@ -1,95 +1,112 @@
 <template>
   <div id="UserManagePage">
-   <a-form layout="inline" :model="searchParams" @finish="doSearch">
-     <a-form-item label="账号">
-       <a-input v-model:value="searchParams.userAccount" placeholder="输入账号"/>
-     </a-form-item>
-     <a-form-item label="用户名">
-       <a-input v-model:value="searchParams.userName" placeholder="输入用户名"/>
-     </a-form-item>
-     <a-form-item>
-       <a-button type="primary" html-type="sumbit">搜索</a-button>
-     </a-form-item>
-   </a-form>
-    <a-divider/>
+    <div class="container">
+      <div class="search-section">
+        <a-form layout="inline" :model="searchParams" @finish="doSearch">
+          <a-form-item label="账号">
+            <a-input v-model:value="searchParams.userAccount" placeholder="输入账号"/>
+          </a-form-item>
+          <a-form-item label="用户名">
+            <a-input v-model:value="searchParams.userName" placeholder="输入用户名"/>
+          </a-form-item>
+          <a-form-item>
+            <a-button type="primary" html-type="submit">搜索</a-button>
+          </a-form-item>
+        </a-form>
+      </div>
+      <a-divider/>
 
-
-    <a-table
-        :columns="columns"
-        :data-source="data"
-        :pagination="pagination"
-        @change="doTableChange"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'userAvatar'">
-          <a-image :src="record.userAvatar" :width="120"></a-image>
+      <a-table
+          :columns="columns"
+          :data-source="data"
+          :pagination="pagination"
+          @change="doTableChange"
+          :row-key="(record: TableRecord) => record.id"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.dataIndex === 'userAvatar'">
+            <a-image :src="record.userAvatar" :width="60" :height="60" style="border-radius: 50%;"/>
+          </template>
+          <template v-else-if="column.dataIndex === 'userRole'">
+            <div v-if="record.userRole === 'admin'">
+              <a-tag color="green">管理员</a-tag>
+            </div>
+            <div v-else>
+              <a-tag color="blue">普通用户</a-tag>
+            </div>
+          </template>
+          <template v-else-if="column.dataIndex === 'createTime'">
+            {{dayjs(record.createTime).format('YYYY-MM-DD HH:mm:ss')}}
+          </template>
+          <template v-else-if="column.key === 'action'">
+            <a-button danger @click="doDelete(record.id)">删除</a-button>
+          </template>
         </template>
-        <template v-else-if="column.dataIndex === 'userRole'">
-        <div v-if="record.userRole === 'admin'">
-          <a-tag color="green">管理员</a-tag>
-        </div>
-          <div v-else>
-            <a-tag color="blue">普通用户</a-tag>
-          </div>
-        </template>
-
-        <template v-else-if="column.dataIndex === 'createTime'">
-          {{dayjs(record.createTime).format('YYYY-MM-DD HH:mm:ss')}}
-        </template>
-
-        <template v-else-if="column.key === 'action'">
-          <a-button danger @click="doDelete(record.id)">删除</a-button>
-        </template>
-      </template>
-    </a-table>
+      </a-table>
+    </div>
   </div>
 
 </template>
+
 <script lang="ts" setup>
 import { SmileOutlined, DownOutlined } from '@ant-design/icons-vue';
 import {computed, onMounted, reactive, ref} from "vue";
-import { deleteAppAdmin, listAppByPageAdmin } from "@/api/appController.ts";
+import { deleteUser, listUserByPage } from "@/api/userController";
 import {message} from "ant-design-vue";
 import dayjs from "dayjs";
 
-const columns = [
+interface TableRecord {
+  id?: number
+  userAccount?: string
+  userName?: string
+  userAvatar?: string
+  userProfile?: string
+  userRole?: string
+  createTime?: string
+}
 
+const columns = [
   {
     title: 'id',
     dataIndex: 'id',
-
+    width: 80,
   },
   {
     title: '账号',
     dataIndex: 'userAccount',
+    width: 150,
   },
   {
     title: '用户名',
     dataIndex: 'userName',
-
+    width: 150,
   },
   {
     title: '头像',
     dataIndex: 'userAvatar',
+    width: 100,
   },
   {
     title: '用户简介',
     dataIndex: 'userProfile',
+    ellipsis: true,
   },
   {
     title: '用户角色',
     dataIndex: 'userRole',
+    width: 120,
   },
   {
     title: '创建时间',
     dataIndex: 'createTime',
+    width: 180,
   },
   {
     title: '操作',
     dataIndex: 'action',
     key: 'action',
+    width: 100,
   },
-
 ];
 
 const data = ref<API.UserVO[]>([])
@@ -106,7 +123,7 @@ const searchParams = reactive<API.UserQueryRequest>({
 
 //调用后端API获取数据
 const fetchData = async () => {
-  const res = await listAppByPageAdmin({
+  const res = await listUserByPage({
     ...searchParams,
   })
   if (res.data.data){
@@ -144,11 +161,11 @@ const doSearch = () => {
 }
 
 // 删除数据
-const doDelete = async (id: string) => {
+const doDelete = async (id: number) => {
   if (!id) {
     return
   }
-  const res = await deleteAppAdmin({ id })
+  const res = await deleteUser({ id })
   if (res.data.code === 0) {
     message.success('删除成功')
     //刷新数据
@@ -165,3 +182,59 @@ onMounted( () => {
 } )
 </script>
 
+<style scoped>
+#UserManagePage {
+  min-height: 100vh;
+  padding: 24px;
+  background: #f5f5f5;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-section {
+  background: #fafafa;
+  padding: 20px;
+  border-radius: 6px;
+  margin-bottom: 24px;
+}
+
+:deep(.ant-table) {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+:deep(.ant-table-thead > tr > th) {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+:deep(.ant-btn-primary) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+:deep(.ant-btn-primary:hover) {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+@media (max-width: 768px) {
+  #UserManagePage {
+    padding: 16px;
+  }
+
+  .container {
+    padding: 16px;
+  }
+
+  .search-section {
+    padding: 16px;
+  }
+}
+</style>

@@ -89,45 +89,23 @@ const originItems = [
     title: '首页',
   },
   {
-    key: '/user/register',
-    label: '注册',
-    title: '注册',
-  },
-  {
     key: '/admin/userManage',
     label: '用户管理',
     title: '用户管理',
   },
-  {
-    key: '/admin/AppManage',
-    label: '应用管理',
-    title: '应用管理',
-  },
-
-
 ]
+
 
 // 过滤菜单项
 const filterMenus = (menus = [] as MenuProps['items']) => {
   return menus?.filter((menu) => {
     const menuKey = menu?.key as string
-
-    // 管理员页面过滤
-    if(menuKey?.startsWith('/admin')) {
+    if (menuKey?.startsWith('/admin')) {
       const loginUser = loginUserStore.loginUser
       if (!loginUser || loginUser.userRole !== 'admin') {
         return false
       }
     }
-
-    // 登录后隐藏注册页面
-    if (menuKey === '/user/register') {
-      const loginUser = loginUserStore.loginUser
-      if (loginUser && loginUser.id) {
-        return false
-      }
-    }
-
     return true
   })
 }
