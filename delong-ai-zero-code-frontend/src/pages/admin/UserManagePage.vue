@@ -56,7 +56,7 @@ import {message} from "ant-design-vue";
 import dayjs from "dayjs";
 
 interface TableRecord {
-  id?: number
+  id?: string | number
   userAccount?: string
   userName?: string
   userAvatar?: string
@@ -161,7 +161,7 @@ const doSearch = () => {
 }
 
 // 删除数据
-const doDelete = async (id: number) => {
+const doDelete = async (id: string | number) => {
   if (!id) {
     return
   }

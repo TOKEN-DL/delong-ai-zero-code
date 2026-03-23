@@ -4,7 +4,14 @@
       "Bash(npm run:*)",
       "Bash(npm list:*)",
       "mcp__zread__get_repo_structure",
-      "mcp__zread__read_file"
+      "mcp__zread__read_file",
+      "Bash(npm install:*)",
+      "mcp__zai-mcp-server__analyze_image",
+      "Bash(timeout 15)",
+      "Bash(curl -s http://localhost:5188/__devtools__/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8124/api/)",
+      "Bash(curl -s \"http://localhost:8124/api/app/chat/gen/code?appId=1&message=test\" -H \"Accept: text/event-stream\" --max-time 5)",
+      "Bash(curl -v \"http://localhost:8124/api/app/chat/gen/code?appId=1&message=test\" -H \"Accept: text/event-stream\" --max-time 5)"
     ]
   }
 }
