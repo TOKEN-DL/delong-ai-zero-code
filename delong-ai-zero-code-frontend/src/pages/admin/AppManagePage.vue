@@ -7,7 +7,11 @@
             <a-input v-model:value="searchParams.appName" placeholder="输入应用名称"/>
           </a-form-item>
           <a-form-item label="生成类型">
-            <a-input v-model:value="searchParams.codeGenType" placeholder="输入生成类型"/>
+            <a-select v-model:value="searchParams.codeGenType" placeholder="选择生成类型" allow-clear style="width: 160px">
+              <a-select-option v-for="item in CODE_GEN_TYPE_OPTIONS" :key="item.value" :value="item.value">
+                {{ item.label }}
+              </a-select-option>
+            </a-select>
           </a-form-item>
           <a-form-item label="用户ID">
             <a-input-number v-model:value="searchParams.userId" placeholder="输入用户ID" :min="1"/>
@@ -44,7 +48,7 @@
             <div class="prompt-text">{{ record.initPrompt || '-' }}</div>
           </template>
           <template v-else-if="column.dataIndex === 'codeGenType'">
-            <a-tag color="blue">{{ record.codeGenType || '-' }}</a-tag>
+            <a-tag color="blue">{{ getCodeGenTypeLabel(record.codeGenType) }}</a-tag>
           </template>
           <template v-else-if="column.dataIndex === 'priority'">
             <a-tag v-if="record.priority === 99" color="gold">精选</a-tag>
@@ -89,6 +93,7 @@ import { listAppByPageAdmin, deleteAppAdmin, updateAppAdmin } from "@/api/appCon
 import { message, Modal } from "ant-design-vue";
 import dayjs from "dayjs";
 import { ExclamationCircleOutlined } from '@ant-design/icons-vue';
+import { CODE_GEN_TYPE_OPTIONS, getCodeGenTypeLabel } from "@/constants/app";
 
 const router = useRouter()
 
@@ -187,17 +192,37 @@ const searchParams = reactive<API.AppQueryRequest>({
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await listAppByPageAdmin({
-      ...searchParams,
+    // 过滤掉 undefined 和空字符串的参数
+    const params: Record<string, any> = {}
+    Object.keys(searchParams).forEach(key => {
+      const value = (searchParams as Record<string, any>)[key]
+      if (value !== undefined && value !== '') {
+        params[key] = value
+      }
     })
+
+    const res = await listAppByPageAdmin(params)
+
+    // 检查响应状态码
+    if (res.data.code != 0) {
+      message.error('获取数据失败: ' + (res.data.message || '未知错误'))
+      data.value = []
+      total.value = 0
+      return
+    }
+    // 检查数据是否存在
     if (res.data.data) {
       data.value = res.data.data.records ?? []
       total.value = res.data.data.totalRow ?? 0
     } else {
-      message.error('获取数据失败: ' + res.data.message)
+      data.value = []
+      total.value = 0
     }
-  } catch (error) {
-    message.error('获取数据失败')
+  } catch (error: any) {
+    console.error('获取应用列表失败:', error)
+    message.error('获取数据失败: ' + (error.message || '网络错误'))
+    data.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }

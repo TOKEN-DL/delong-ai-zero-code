@@ -1,10 +1,13 @@
 import axios from "axios";
 import {message} from "ant-design-vue";
 
+// API 基础地址，优先使用环境变量
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+
 // 创建Axios实例
 const myAxios = axios.create({
-    baseURL: "http://localhost:8124/api",
-    timeout: 5000,
+    baseURL: API_BASE_URL,
+    timeout: 30000,
     withCredentials: true,
 })
 

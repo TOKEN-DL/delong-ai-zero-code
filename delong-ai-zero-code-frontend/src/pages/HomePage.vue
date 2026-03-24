@@ -4,7 +4,8 @@ import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { addApp, listAppByPage, listFeaturedAppByPage, deleteApp } from '@/api/appController'
 import { useLoginUserStore } from '@/stores/loginUser'
-import { PlusOutlined, AppstoreOutlined, DeleteOutlined, EditOutlined, RocketOutlined } from '@ant-design/icons-vue'
+import { getDeployedAppUrl } from '@/config'
+import { PlusOutlined, AppstoreOutlined, DeleteOutlined, EditOutlined, MessageOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
 
 const router = useRouter()
@@ -145,9 +146,12 @@ const handleFeaturedAppsPageChange = (page: number, pageSize: number) => {
 }
 
 // 进入应用对话页面
-const enterApp = (app: API.AppVO) => {
+const enterApp = (app: API.AppVO, event?: Event) => {
+  if (event) {
+    event.stopPropagation()
+  }
   if (app.id) {
-    router.push(`/app/chat/${app.id}`)
+    router.push(`/app/chat/${app.id}?view=1`)
   }
 }
 
@@ -186,17 +190,12 @@ const deleteMyApp = (app: API.AppVO, event: Event) => {
   })
 }
 
-// 打开部署的网站
+// 打开部署的网站（查看作品）
 const openDeployedApp = (app: API.AppVO, event: Event) => {
   event.stopPropagation()
   if (app.deployKey) {
-    window.open(`http://localhost:8124/api/static/${app.deployKey}/index.html`, '_blank')
+    window.open(getDeployedAppUrl(app.deployKey), '_blank')
   }
-}
-
-// 格式化时间
-const formatTime = (time: string) => {
-  return dayjs(time).format('YYYY-MM-DD HH:mm')
 }
 
 // 页面加载时获取数据
@@ -267,23 +266,27 @@ onMounted(() => {
             class="app-card"
             @click="enterApp(app)"
           >
+            <!-- 应用封面 -->
             <div class="app-cover">
               <img v-if="app.cover" :src="app.cover" alt="应用封面" />
-              <AppstoreOutlined v-else class="default-cover" />
-            </div>
-            <div class="app-info">
-              <h3 class="app-name">{{ app.appName || '未命名应用' }}</h3>
-              <p class="app-prompt">{{ app.initPrompt || '暂无描述' }}</p>
-              <div class="app-meta">
-                <span class="app-time">{{ formatTime(app.createTime || '') }}</span>
-                <span v-if="app.deployedTime" class="app-deployed">
-                  <RocketOutlined /> 已部署
-                </span>
+              <div v-else class="app-cover-placeholder">
+                <AppstoreOutlined class="cover-icon" />
               </div>
             </div>
+            <!-- 应用信息 -->
+            <div class="app-header">
+              <a-avatar :size="40" :src="app.user?.userAvatar" class="app-avatar">
+                <template #icon><UserOutlined /></template>
+              </a-avatar>
+              <div class="app-header-info">
+                <h3 class="app-name">{{ app.appName || '未命名应用' }}</h3>
+                <span class="app-author">{{ app.user?.userName || '匿名用户' }}</span>
+              </div>
+            </div>
+            <!-- 操作按钮 -->
             <div class="app-actions">
-              <a-button type="link" size="small" @click="(e: Event) => editApp(app, e)">
-                <EditOutlined /> 编辑
+              <a-button type="link" size="small" @click="(e: Event) => enterApp(app, e)">
+                <MessageOutlined /> 查看对话
               </a-button>
               <a-button
                 v-if="app.deployKey"
@@ -291,7 +294,10 @@ onMounted(() => {
                 size="small"
                 @click="(e: Event) => openDeployedApp(app, e)"
               >
-                <RocketOutlined /> 访问
+                <EyeOutlined /> 查看作品
+              </a-button>
+              <a-button type="link" size="small" @click="(e: Event) => editApp(app, e)">
+                <EditOutlined /> 编辑
               </a-button>
               <a-button type="link" size="small" danger @click="(e: Event) => deleteMyApp(app, e)">
                 <DeleteOutlined /> 删除
@@ -340,27 +346,35 @@ onMounted(() => {
             class="app-card featured"
             @click="enterApp(app)"
           >
+            <!-- 应用封面 -->
             <div class="app-cover">
               <img v-if="app.cover" :src="app.cover" alt="应用封面" />
-              <AppstoreOutlined v-else class="default-cover" />
-              <div class="featured-badge">精选</div>
+              <div v-else class="app-cover-placeholder">
+                <AppstoreOutlined class="cover-icon" />
+              </div>
+              <span class="featured-badge">精选</span>
             </div>
-            <div class="app-info">
-              <h3 class="app-name">{{ app.appName || '未命名应用' }}</h3>
-              <p class="app-prompt">{{ app.initPrompt || '暂无描述' }}</p>
-              <div class="app-meta">
+            <!-- 应用信息 -->
+            <div class="app-header">
+              <a-avatar :size="40" :src="app.user?.userAvatar" class="app-avatar">
+                <template #icon><UserOutlined /></template>
+              </a-avatar>
+              <div class="app-header-info">
+                <h3 class="app-name">{{ app.appName || '未命名应用' }}</h3>
                 <span class="app-author">{{ app.user?.userName || '匿名用户' }}</span>
-                <span class="app-time">{{ formatTime(app.createTime || '') }}</span>
               </div>
             </div>
             <div class="app-actions">
+              <a-button type="link" size="small" @click="(e: Event) => enterApp(app, e)">
+                <MessageOutlined /> 查看对话
+              </a-button>
               <a-button
                 v-if="app.deployKey"
                 type="link"
                 size="small"
                 @click="(e: Event) => openDeployedApp(app, e)"
               >
-                <RocketOutlined /> 访问
+                <EyeOutlined /> 查看作品
               </a-button>
             </div>
           </div>
@@ -488,7 +502,7 @@ onMounted(() => {
 /* 应用网格 */
 .apps-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
@@ -517,23 +531,35 @@ onMounted(() => {
   border-color: #faad14;
 }
 
+/* 应用封面 */
 .app-cover {
-  height: 140px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 100%;
+  height: 160px;
   position: relative;
   overflow: hidden;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
 }
 
 .app-cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s ease;
 }
 
-.default-cover {
+.app-card:hover .app-cover img {
+  transform: scale(1.05);
+}
+
+.app-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-cover-placeholder .cover-icon {
   font-size: 48px;
   color: #ccc;
 }
@@ -548,44 +574,44 @@ onMounted(() => {
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.app-info {
-  padding: 16px;
+/* 卡片头部 - 左右结构 */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.app-avatar {
+  flex-shrink: 0;
+  border: 2px solid #f0f0f0;
+}
+
+.app-header-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .app-name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: #333;
-  margin: 0 0 8px;
+  margin: 0 0 2px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.app-prompt {
-  font-size: 13px;
-  color: #666;
-  margin: 0 0 12px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.5;
-  min-height: 39px;
-}
-
-.app-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.app-author {
   font-size: 12px;
   color: #999;
-}
-
-.app-deployed {
-  color: #52c41a;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-actions {

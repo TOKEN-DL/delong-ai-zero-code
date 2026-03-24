@@ -1,26 +1,69 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick, onUnmounted } from 'vue'
+import { ref, onMounted, nextTick, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { message } from 'ant-design-vue'
-import { getAppById, deployApp } from '@/api/appController'
-import { SendOutlined, RocketOutlined, AppstoreOutlined, ArrowLeftOutlined } from '@ant-design/icons-vue'
+import { message, Modal } from 'ant-design-vue'
+import { getAppById, deployApp, deleteApp } from '@/api/appController'
+import { useLoginUserStore } from '@/stores/loginUser'
+import { getSSEUrl, getAppPreviewUrl } from '@/config'
+import { SendOutlined, RocketOutlined, AppstoreOutlined, ArrowLeftOutlined, InfoCircleOutlined, UserOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
 
-// 自定义渲染器，添加代码高亮
+// 代码语言别名映射
+const langAliases: Record<string, string> = {
+  js: 'javascript',
+  ts: 'typescript',
+  py: 'python',
+  rb: 'ruby',
+  sh: 'bash',
+  shell: 'bash',
+  yml: 'yaml',
+  md: 'markdown',
+  htm: 'html',
+}
+
+// 获取规范化的语言名称
+const getNormalizedLang = (lang: string): string => {
+  const normalized = langAliases[lang.toLowerCase()] || lang.toLowerCase()
+  return normalized
+}
+
+// 自定义渲染器，添加代码高亮和语言标签
 const renderer = new marked.Renderer()
 renderer.code = function({ text, lang }: { text: string; lang?: string }) {
+  const language = lang ? getNormalizedLang(lang) : ''
   let highlighted: string
-  if (lang && hljs.getLanguage(lang)) {
+
+  if (language && hljs.getLanguage(language)) {
     try {
-      highlighted = hljs.highlight(text, { language: lang }).value
+      highlighted = hljs.highlight(text, { language }).value
     } catch (e) {
-      highlighted = text
+      highlighted = hljs.highlightAuto(text).value
     }
   } else {
-    highlighted = hljs.highlightAuto(text).value
+    // 自动检测语言
+    const result = hljs.highlightAuto(text, ['html', 'css', 'javascript', 'typescript', 'python', 'java', 'json', 'bash', 'sql'])
+    highlighted = result.value
   }
-  return `<pre class="code-block"><code class="hljs ${lang || ''}">${highlighted}</code></pre>`
+
+  // 显示的语言标签
+  const displayLang = language || 'code'
+
+  // 生成唯一的代码块ID
+  const codeId = `code-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+
+  return `
+    <div class="code-block-wrapper">
+      <div class="code-block-header">
+        <span class="code-lang">${displayLang}</span>
+        <button class="code-copy-btn" onclick="copyCode('${codeId}', this)" title="复制代码">
+          <span class="copy-icon">📋</span>
+          <span class="copy-text">复制</span>
+        </button>
+      </div>
+      <pre class="code-block" id="${codeId}"><code class="hljs ${language}">${highlighted}</code></pre>
+    </div>
+  `
 }
 
 // 配置 marked
@@ -42,11 +85,32 @@ const renderMarkdown = (content: string): string => {
 
 const router = useRouter()
 const route = useRoute()
+const loginUserStore = useLoginUserStore()
 
 const appId = ref<string>(route.params.appId as string)
 
 // 应用信息
 const appInfo = ref<API.AppVO | null>(null)
+
+// 是否为只读查看模式（从卡片点击进入时带 view=1 参数）
+const isViewMode = computed(() => route.query.view === '1')
+
+// 是否为自己的作品
+const isOwner = computed(() => {
+  const loginUser = loginUserStore.loginUser
+  return loginUser.id && appInfo.value?.userId === loginUser.id
+})
+
+// 是否为管理员
+const isAdmin = computed(() => {
+  return loginUserStore.loginUser.userRole === 'admin'
+})
+
+// 是否可以管理（本人或管理员）
+const canManage = computed(() => isOwner.value || isAdmin.value)
+
+// 输入框是否禁用
+const isInputDisabled = computed(() => isViewMode.value || !isOwner.value)
 
 // 对话消息
 interface ChatMessage {
@@ -81,8 +145,8 @@ const fetchAppInfo = async () => {
     const res = await getAppById({ id: appId.value })
     if (res.data.code === 0 && res.data.data) {
       appInfo.value = res.data.data
-      // 如果有初始提示词，自动发送
-      if (appInfo.value.initPrompt && messages.value.length === 0) {
+      // 如果有初始提示词，且不是查看模式，且是自己的作品，才自动发送
+      if (appInfo.value.initPrompt && messages.value.length === 0 && !isViewMode.value && isOwner.value) {
         // 添加初始提示词消息
         messages.value.push({
           role: 'user',
@@ -117,7 +181,7 @@ const startCodeGen = async (prompt: string) => {
     files: [],
   })
 
-  const url = `http://localhost:8124/api/app/chat/gen/code?appId=${appId.value}&message=${encodeURIComponent(prompt)}`
+  const url = getSSEUrl(appId.value, prompt)
   console.log('SSE连接URL:', url)
 
   abortController = new AbortController()
@@ -337,6 +401,52 @@ const goBack = () => {
   router.push('/')
 }
 
+// 编辑应用
+const editApp = () => {
+  if (appInfo.value?.id) {
+    router.push(`/app/edit/${appInfo.value.id}`)
+  }
+}
+
+// 删除应用
+const deleteAppHandler = () => {
+  if (!appInfo.value?.id) return
+
+  Modal.confirm({
+    title: '确认删除',
+    content: `确定要删除应用"${appInfo.value.appName || '未命名应用'}"吗？删除后无法恢复。`,
+    okText: '确定',
+    cancelText: '取消',
+    okType: 'danger',
+    onOk: async () => {
+      try {
+        const res = await deleteApp({ id: appInfo.value!.id! })
+        if (res.data.code === 0) {
+          message.success('删除成功')
+          router.push('/')
+        } else {
+          message.error('删除失败: ' + res.data.message)
+        }
+      } catch (error) {
+        message.error('删除失败')
+      }
+    },
+  })
+}
+
+// 格式化日期时间
+const formatDateTime = (datetime: string | undefined) => {
+  if (!datetime) return '-'
+  const date = new Date(datetime)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 // 滚动到消息底部
 const scrollToBottom = () => {
   nextTick(() => {
@@ -352,16 +462,53 @@ const formatTime = (timestamp: Date) => {
   return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
 
+// 全局复制代码函数
+const setupCopyCode = () => {
+  (window as any).copyCode = async (codeId: string, btn: HTMLElement) => {
+    const codeBlock = document.getElementById(codeId)
+    if (codeBlock) {
+      const code = codeBlock.textContent || ''
+      try {
+        await navigator.clipboard.writeText(code)
+        // 更新按钮状态
+        const copyText = btn.querySelector('.copy-text')
+        const copyIcon = btn.querySelector('.copy-icon')
+        if (copyText) copyText.textContent = '已复制'
+        if (copyIcon) copyIcon.textContent = '✅'
+        btn.classList.add('copied')
+
+        // 2秒后恢复
+        setTimeout(() => {
+          if (copyText) copyText.textContent = '复制'
+          if (copyIcon) copyIcon.textContent = '📋'
+          btn.classList.remove('copied')
+        }, 2000)
+      } catch (err) {
+        message.error('复制失败')
+      }
+    }
+  }
+}
+
 // 组件卸载时取消请求
 onUnmounted(() => {
   if (abortController) {
     abortController.abort()
     abortController = null
   }
+  // 移除全局复制函数
+  if ((window as any).copyCode) {
+    delete (window as any).copyCode
+  }
 })
 
 // 页面加载时获取应用信息
-onMounted(() => {
+onMounted(async () => {
+  // 设置全局复制函数
+  setupCopyCode()
+  // 先获取登录用户信息
+  await loginUserStore.fetchLoginUser()
+  // 再获取应用信息
   fetchAppInfo()
 })
 </script>
@@ -381,18 +528,58 @@ onMounted(() => {
           <h1>{{ appInfo?.appName || '未命名应用' }}</h1>
         </div>
       </div>
-      <a-button
-        type="primary"
-        size="large"
-        :loading="deploying"
-        :disabled="!codeGenerated"
-        @click="handleDeploy"
-      >
-        <template #icon>
-          <RocketOutlined />
-        </template>
-        部署应用
-      </a-button>
+      <div class="right-section">
+        <!-- 应用详情按钮 -->
+        <a-popover trigger="click" placement="bottomRight" :overlay-style="{ width: '280px' }">
+          <template #content>
+            <div class="app-detail-popover">
+              <!-- 创建者信息 -->
+              <div class="detail-item">
+                <div class="detail-label">创建者</div>
+                <div class="creator-info">
+                  <a-avatar :size="32" :src="appInfo?.user?.userAvatar" class="creator-avatar">
+                    <template #icon><UserOutlined /></template>
+                  </a-avatar>
+                  <span class="creator-name">{{ appInfo?.user?.userName || '匿名用户' }}</span>
+                </div>
+              </div>
+              <!-- 创建时间 -->
+              <div class="detail-item">
+                <div class="detail-label">创建时间</div>
+                <div class="detail-value">{{ formatDateTime(appInfo?.createTime) }}</div>
+              </div>
+              <!-- 操作栏（仅本人或管理员可见） -->
+              <div v-if="canManage" class="detail-actions">
+                <a-button type="default" size="small" @click="editApp">
+                  <EditOutlined /> 修改
+                </a-button>
+                <a-button type="default" size="small" danger @click="deleteAppHandler">
+                  <DeleteOutlined /> 删除
+                </a-button>
+              </div>
+            </div>
+          </template>
+          <a-button size="large">
+            <template #icon>
+              <InfoCircleOutlined />
+            </template>
+            应用详情
+          </a-button>
+        </a-popover>
+        <!-- 部署按钮 -->
+        <a-button
+          type="primary"
+          size="large"
+          :loading="deploying"
+          :disabled="!codeGenerated"
+          @click="handleDeploy"
+        >
+          <template #icon>
+            <RocketOutlined />
+          </template>
+          部署应用
+        </a-button>
+      </div>
     </div>
 
     <!-- 核心内容区域 -->
@@ -433,18 +620,20 @@ onMounted(() => {
           </div>
         </div>
         <div class="input-area">
-          <a-textarea
-            v-model:value="currentInput"
-            placeholder="继续完善你的应用描述，可以一步一步完善生成效果..."
-            :auto-size="{ minRows: 2, maxRows: 4 }"
-            :disabled="sending"
-            @pressEnter="sendMessage"
-            class="message-input"
-          />
+          <a-tooltip :title="!isOwner ? '无法在别人的作品下对话哦~' : ''" placement="top">
+            <a-textarea
+              v-model:value="currentInput"
+              :placeholder="!isOwner ? '无法在别人的作品下对话哦~' : '继续完善你的应用描述，可以一步一步完善生成效果...'"
+              :auto-size="{ minRows: 2, maxRows: 4 }"
+              :disabled="sending || isInputDisabled"
+              @pressEnter="sendMessage"
+              class="message-input"
+            />
+          </a-tooltip>
           <a-button
             type="primary"
             size="large"
-            :disabled="!currentInput.trim() || sending"
+            :disabled="!currentInput.trim() || sending || isInputDisabled"
             @click="sendMessage"
             class="send-btn"
           >
@@ -466,7 +655,7 @@ onMounted(() => {
         <div class="preview-container">
           <div v-if="codeGenerated && appInfo" class="preview-iframe-wrapper">
             <iframe
-              :src="`http://localhost:8124/api/static/${appInfo.codeGenType}_${appInfo.id}/index.html`"
+              :src="getAppPreviewUrl(appInfo.codeGenType || '', appInfo.id || '')"
               class="preview-iframe"
               frameborder="0"
             />
@@ -508,6 +697,12 @@ onMounted(() => {
   gap: 8px;
 }
 
+.right-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .back-btn {
   font-size: 18px;
 }
@@ -528,6 +723,58 @@ onMounted(() => {
   font-size: 20px;
   font-weight: 600;
   color: #333;
+}
+
+/* 应用详情悬浮窗 */
+.app-detail-popover {
+  padding: 4px 0;
+}
+
+.detail-item {
+  margin-bottom: 16px;
+}
+
+.detail-item:last-of-type {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 6px;
+}
+
+.detail-value {
+  font-size: 14px;
+  color: #333;
+}
+
+.creator-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.creator-avatar {
+  flex-shrink: 0;
+}
+
+.creator-name {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.detail-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  gap: 10px;
+}
+
+.detail-actions .ant-btn {
+  flex: 1;
 }
 
 .content-area {
@@ -552,7 +799,8 @@ onMounted(() => {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  height: 100%;
+  height: 600px;
+  max-height: 600px;
 }
 
 .messages-container {
@@ -691,7 +939,7 @@ onMounted(() => {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  height: 100%;
+  height: 600px;
   min-width: 0;
 }
 
@@ -701,7 +949,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: auto;
+  overflow: hidden;
   min-height: 0;
 }
 
@@ -878,69 +1126,139 @@ onMounted(() => {
   margin: 16px 0;
 }
 
-/* 代码块样式 */
+/* 行内代码样式 */
 .markdown-content code {
-  background: #f5f5f5;
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
   padding: 2px 6px;
   border-radius: 4px;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
   font-size: 13px;
 }
 
-.markdown-content .code-block {
-  background: #282c34;
-  border-radius: 8px;
-  padding: 12px 16px;
+/* 代码块容器 */
+.markdown-content .code-block-wrapper {
+  background: #1e1e1e;
+  border-radius: 10px;
   margin: 12px 0;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 代码块头部 */
+.code-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: #2d2d2d;
+  border-bottom: 1px solid #3d3d3d;
+}
+
+.code-lang {
+  font-size: 12px;
+  color: #888;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.code-copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid #555;
+  border-radius: 6px;
+  color: #aaa;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.code-copy-btn:hover {
+  background: #3d3d3d;
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.code-copy-btn.copied {
+  background: rgba(102, 234, 126, 0.1);
+  border-color: #66ea7e;
+  color: #66ea7e;
+}
+
+.code-copy-btn .copy-icon {
+  font-size: 12px;
+}
+
+/* 代码块主体 */
+.markdown-content .code-block {
+  background: #1e1e1e;
+  padding: 16px;
+  margin: 0;
   overflow-x: auto;
+  border-radius: 0;
 }
 
 .markdown-content .code-block code {
   background: transparent;
   padding: 0;
-  color: #abb2bf;
+  color: #d4d4d4;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.6;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
 }
 
-/* Highlight.js 主题覆盖 */
+/* Highlight.js One Dark 主题 */
 .markdown-content .hljs {
   background: transparent;
   padding: 0;
 }
 
+/* 关键字 - 紫色 */
 .markdown-content .hljs-keyword,
-.markdown-content .hljs-selector-tag {
+.markdown-content .hljs-selector-tag,
+.markdown-content .hljs-built_in,
+.markdown-content .hljs-class {
   color: #c678dd;
 }
 
+/* 字符串 - 绿色 */
 .markdown-content .hljs-string,
-.markdown-content .hljs-attr {
+.markdown-content .hljs-attr,
+.markdown-content .hljs-template-variable,
+.markdown-content .hljs-doctag {
   color: #98c379;
 }
 
-.markdown-content .hljs-number {
+/* 数字 - 橙色 */
+.markdown-content .hljs-number,
+.markdown-content .hljs-literal {
   color: #d19a66;
 }
 
-.markdown-content .hljs-function {
-  color: #61afef;
-}
-
-.markdown-content .hljs-comment {
-  color: #5c6370;
-  font-style: italic;
-}
-
-.markdown-content .hljs-variable,
-.markdown-content .hljs-template-variable {
-  color: #e06c75;
-}
-
+/* 函数 - 蓝色 */
+.markdown-content .hljs-function,
 .markdown-content .hljs-title {
   color: #61afef;
 }
 
+/* 注释 - 灰色 */
+.markdown-content .hljs-comment,
+.markdown-content .hljs-quote {
+  color: #5c6370;
+  font-style: italic;
+}
+
+/* 变量 - 红色 */
+.markdown-content .hljs-variable,
+.markdown-content .hljs-params {
+  color: #e06c75;
+}
+
+/* 标签名 - 红色/橙色 */
 .markdown-content .hljs-tag {
   color: #e06c75;
 }
@@ -949,7 +1267,79 @@ onMounted(() => {
   color: #e06c75;
 }
 
+/* 属性 - 黄色 */
 .markdown-content .hljs-attribute {
+  color: #d19a66;
+}
+
+/* HTML 特定 */
+.markdown-content .hljs-tag .hljs-attr {
+  color: #d19a66;
+}
+
+.markdown-content .hljs-tag .hljs-string {
   color: #98c379;
+}
+
+/* CSS 特定 */
+.markdown-content .hljs-selector-id,
+.markdown-content .hljs-selector-class {
+  color: #e06c75;
+}
+
+.markdown-content .hljs-property,
+.markdown-content .hljs-rule .hljs-keyword {
+  color: #61afef;
+}
+
+/* JavaScript/TypeScript 特定 */
+.markdown-content .hljs-meta {
+  color: #61afef;
+}
+
+.markdown-content .hljs-symbol,
+.markdown-content .hljs-bullet {
+  color: #61afef;
+}
+
+/* JSON 特定 */
+.markdown-content .hljs-addition {
+  color: #98c379;
+}
+
+.markdown-content .hljs-deletion {
+  color: #e06c75;
+}
+
+/* 正则表达式 */
+.markdown-content .hljs-regexp {
+  color: #98c379;
+}
+
+/* 强调 */
+.markdown-content .hljs-emphasis {
+  font-style: italic;
+}
+
+.markdown-content .hljs-strong {
+  font-weight: bold;
+}
+
+/* 滚动条美化 */
+.markdown-content .code-block::-webkit-scrollbar {
+  height: 8px;
+}
+
+.markdown-content .code-block::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.markdown-content .code-block::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.markdown-content .code-block::-webkit-scrollbar-thumb:hover {
+  background: #667eea;
 }
 </style>
