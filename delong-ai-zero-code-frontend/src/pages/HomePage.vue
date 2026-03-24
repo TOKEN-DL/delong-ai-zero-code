@@ -12,12 +12,32 @@ const router = useRouter()
 const loginUserStore = useLoginUserStore()
 
 // 网站标题
-const siteTitle = ref('零代码平台')
-const siteDescription = ref('不写一行代码，生成完整应用')
+const siteTitle = ref('AI 应用生成平台')
+const siteDescription = ref('一句话轻松创建网站应用')
 
 // 用户提示词输入
 const userInput = ref('')
 const creating = ref(false)
+
+// 快捷提示词示例
+const promptExamples = ref([
+  {
+    title: '个人博客',
+    prompt: '帮我创建一个个人博客网站，包含首页展示最新文章列表、文章详情页、关于我页面、分类归档页面。首页需要有轮播图展示精选文章，文章列表支持分页加载，右侧侧边栏显示热门文章和标签云。整体风格简约清新，使用暖色调配色，支持响应式布局，在手机端也能良好展示。',
+  },
+  {
+    title: '企业官网',
+    prompt: '帮我创建一个科技公司企业官网，包含首页、产品介绍、解决方案、关于我们、联系我们等页面。首页需要有动态的hero区域展示公司核心价值，产品介绍页需要卡片式布局展示产品特点，支持PC和移动端自适应。整体风格现代科技感，使用蓝色渐变为主色调，配合流畅的动画效果。',
+  },
+  {
+    title: '在线简历',
+    prompt: '帮我创建一个在线简历网站，包含个人简介、工作经历、项目展示、技能标签、教育背景、联系方式等模块。使用时间轴展示工作经历，卡片式展示项目作品，技能用进度条或标签云展示。整体风格专业简洁，深色主题，支持打印为PDF格式。',
+  },
+  {
+    title: '作品集',
+    prompt: '帮我创建一个设计师作品集网站，包含首页瀑布流作品展示、作品详情弹窗、关于设计师、联系方式等页面。首页需要大面积展示设计作品，支持分类筛选（如UI设计、品牌设计、插画等），作品hover时显示项目信息，点击打开详情弹窗查看大图和项目介绍。整体风格简约高级，黑白灰为主色调。',
+  },
+])
 
 // 我的应用列表
 const myApps = ref<API.AppVO[]>([])
@@ -218,10 +238,9 @@ onMounted(() => {
       <div class="input-section">
         <a-textarea
           v-model:value="userInput"
-          :placeholder="'描述你想要的应用，例如：帮我生成一个个人博客网站，包含首页、文章列表、关于我等页面...'"
-          :auto-size="{ minRows: 3, maxRows: 6 }"
+          placeholder="帮我创建个人博客网站"
+          :auto-size="{ minRows: 2, maxRows: 4 }"
           :maxlength="500"
-          show-count
           class="prompt-input"
         />
         <a-button
@@ -237,6 +256,19 @@ onMounted(() => {
           </template>
           创建应用
         </a-button>
+      </div>
+
+      <!-- 快捷提示词示例 -->
+      <div class="prompt-examples">
+        <div
+          v-for="example in promptExamples"
+          :key="example.title"
+          class="prompt-example-card"
+          @click="userInput = example.prompt"
+        >
+          <div class="example-title">{{ example.title }}</div>
+          <div class="example-desc">{{ example.prompt.slice(0, 50) }}...</div>
+        </div>
       </div>
     </div>
 
@@ -399,71 +431,154 @@ onMounted(() => {
 <style scoped>
 .home-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 30%, #ffffff 100%);
   padding-bottom: 40px;
 }
 
-/* 顶部英雄区域 */
+/* 顶部英雄区域 - 清凉海滩风格 */
 .hero-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 60px 20px 40px;
+  width: 100%;
+  min-height: 50vh;
+  padding: 80px 20px 60px;
   text-align: center;
+  background:
+    radial-gradient(ellipse at 30% 0%, rgba(14, 165, 233, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 30%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 100%, rgba(56, 189, 248, 0.1) 0%, transparent 50%);
+  position: relative;
+}
+
+.hero-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    linear-gradient(rgba(14, 165, 233, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14, 165, 233, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
 }
 
 .site-title {
-  font-size: 42px;
+  font-size: 48px;
   font-weight: 700;
-  color: #fff;
-  margin-bottom: 12px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #0284c7 0%, #06b6d4 50%, #0ea5e9 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+  animation: gradientShift 4s ease infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 .site-description {
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 32px;
+  color: #0369a1;
+  margin-bottom: 40px;
 }
 
 /* 输入区域 */
 .input-section {
-  max-width: 800px;
-  margin: 0 auto;
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  max-width: 700px;
+  margin: 0 auto 30px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
 }
 
 .prompt-input {
-  border: 2px solid #667eea;
-  border-radius: 8px;
-}
-
-.prompt-input:focus,
-.prompt-input:hover {
-  border-color: #764ba2;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+  flex: 1;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #bae6fd;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.08);
 }
 
 .prompt-input :deep(textarea) {
   font-size: 15px;
+  color: #0c4a6e;
+  background: transparent !important;
+}
+
+.prompt-input :deep(textarea::placeholder) {
+  color: #7dd3fc;
+}
+
+.prompt-input:focus,
+.prompt-input:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
 }
 
 .create-btn {
-  margin-top: 16px;
-  height: 44px;
-  font-size: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  height: 48px;
+  padding: 0 32px;
+  font-size: 15px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
+  flex-shrink: 0;
 }
 
 .create-btn:hover {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.35);
 }
 
 .create-btn:disabled {
-  background: #ccc;
+  background: #e0f2fe;
+  transform: none;
+  box-shadow: none;
+}
+
+/* 快捷提示词示例 */
+.prompt-examples {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.prompt-example-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #e0f2fe;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  backdrop-filter: blur(4px);
+}
+
+.prompt-example-card:hover {
+  background: #ffffff;
+  border-color: #7dd3fc;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.15);
+}
+
+.example-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0369a1;
+  margin-bottom: 6px;
+}
+
+.example-desc {
+  font-size: 12px;
+  color: #0ea5e9;
+  line-height: 1.4;
+  opacity: 0.8;
 }
 
 /* 通用区块样式 */
@@ -483,7 +598,7 @@ onMounted(() => {
 .section-title {
   font-size: 24px;
   font-weight: 600;
-  color: #333;
+  color: #0c4a6e;
   margin: 0;
   display: flex;
   align-items: center;
@@ -492,11 +607,11 @@ onMounted(() => {
 
 .section-icon {
   font-size: 24px;
-  color: #667eea;
+  color: #0ea5e9;
 }
 
 .section-icon.featured {
-  color: #faad14;
+  color: #f59e0b;
 }
 
 /* 应用网格 */
@@ -506,29 +621,29 @@ onMounted(() => {
   gap: 20px;
 }
 
-/* 应用卡片 */
+/* 应用卡片 - 清凉白色主题 */
 .app-card {
-  background: #fff;
+  background: #ffffff;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(14, 165, 233, 0.08);
   cursor: pointer;
   transition: all 0.3s ease;
-  border: 2px solid transparent;
+  border: 1px solid #e0f2fe;
 }
 
 .app-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border-color: #667eea;
+  box-shadow: 0 12px 32px rgba(14, 165, 233, 0.18);
+  border-color: #7dd3fc;
 }
 
 .app-card.featured {
-  border-color: #faad14;
+  border-color: #fcd34d;
 }
 
 .app-card.featured:hover {
-  border-color: #faad14;
+  border-color: #fbbf24;
 }
 
 /* 应用封面 */
@@ -537,7 +652,7 @@ onMounted(() => {
   height: 160px;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+  background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
 }
 
 .app-cover img {
@@ -561,20 +676,20 @@ onMounted(() => {
 
 .app-cover-placeholder .cover-icon {
   font-size: 48px;
-  color: #ccc;
+  color: #7dd3fc;
 }
 
 .featured-badge {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: linear-gradient(135deg, #faad14 0%, #fa8c16 100%);
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
   color: #fff;
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
 }
 
 /* 卡片头部 - 左右结构 */
@@ -587,7 +702,7 @@ onMounted(() => {
 
 .app-avatar {
   flex-shrink: 0;
-  border: 2px solid #f0f0f0;
+  border: 2px solid #e0f2fe;
 }
 
 .app-header-info {
@@ -598,7 +713,7 @@ onMounted(() => {
 .app-name {
   font-size: 15px;
   font-weight: 600;
-  color: #333;
+  color: #0c4a6e;
   margin: 0 0 2px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -607,7 +722,7 @@ onMounted(() => {
 
 .app-author {
   font-size: 12px;
-  color: #999;
+  color: #0ea5e9;
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -616,7 +731,7 @@ onMounted(() => {
 
 .app-actions {
   padding: 12px 16px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #f0f9ff;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -626,6 +741,11 @@ onMounted(() => {
   padding: 0 8px;
   height: auto;
   font-size: 13px;
+  color: #0ea5e9;
+}
+
+.app-actions :deep(.ant-btn-link:hover) {
+  color: #0369a1;
 }
 
 /* 分页 */
@@ -639,11 +759,11 @@ onMounted(() => {
 .login-tip {
   text-align: center;
   padding: 40px;
-  color: #666;
+  color: #0369a1;
 }
 
 .login-tip a {
-  color: #667eea;
+  color: #0ea5e9;
 }
 
 /* 响应式设计 */
@@ -688,6 +808,10 @@ onMounted(() => {
   }
 
   .apps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prompt-examples {
     grid-template-columns: 1fr;
   }
 }
