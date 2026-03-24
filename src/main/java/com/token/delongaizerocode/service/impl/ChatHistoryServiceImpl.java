@@ -1,15 +1,22 @@
 package com.token.delongaizerocode.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.token.delongaizerocode.constant.UserConstant;
 import com.token.delongaizerocode.exception.ErrorCode;
 import com.token.delongaizerocode.exception.ThrowUtils;
 import com.token.delongaizerocode.model.dto.chatthistory.ChatHistoryQueryRequest;
+import com.token.delongaizerocode.model.entity.App;
 import com.token.delongaizerocode.model.entity.ChatHistory;
 import com.token.delongaizerocode.mapper.ChatHistoryMapper;
+import com.token.delongaizerocode.model.entity.User;
 import com.token.delongaizerocode.model.enums.ChatHistoryMessageTypeEnum;
+import com.token.delongaizerocode.service.AppService;
 import com.token.delongaizerocode.service.ChatHistoryService;
+import jakarta.annotation.Resource;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -21,6 +28,12 @@ import java.time.LocalDateTime;
  */
 @Service
 public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatHistory>  implements ChatHistoryService{
+
+    @Resource
+    @Lazy
+    private AppService appService;
+
+
 
     @Override
     public boolean addChatHistory(Long appId, String message, String messageType, Long userId) {
@@ -51,6 +64,9 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         return this.remove(queryWrapper);
 
     }
+
+
+
 
     @Override
     public QueryWrapper getQueryWrapper(ChatHistoryQueryRequest chatHistoryQueryRequest) {
@@ -85,6 +101,28 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         }
         return queryWrapper;
 
+
+
+    }
+
+    @Override
+    public Page<ChatHistory> listAppChatHistory(Long appId,int pageSize, LocalDateTime lastCreateTime, User loginUser) {
+        //校验
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID不能为空");
+        ThrowUtils.throwIf(pageSize <= 0 || pageSize > 500, ErrorCode.PARAMS_ERROR, "页面大小必须在1-50之间");
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.PARAMS_ERROR, "用户未登录");
+        //验证权限，只有创建者和管理员可以看
+        App app = appService.getById(appId);
+        boolean isAdmin = UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole());
+        boolean isCreator = app.getUserId().equals(loginUser.getId());
+        ThrowUtils.throwIf(!isCreator || !isAdmin, ErrorCode.NOT_AUTH_ERROR, "无权查看应用对话历史");
+        //构建查询条件
+        ChatHistoryQueryRequest queryRequest = new ChatHistoryQueryRequest();
+        queryRequest.setAppId(appId);
+        queryRequest.setLastCreateTime(lastCreateTime);
+        QueryWrapper queryWrapper = this.getQueryWrapper(queryRequest);
+        //查询数据
+        return this.page(Page.of(1, pageSize), queryWrapper);
 
 
     }

@@ -44,7 +44,7 @@ public class ChatHistoryQueryRequest extends PageRequest implements Serializable
 
     /**
      * 游标查询 - 最后一条记录的创建时间
-     * 用于分页查询，获取早于此前的消息记录
+     * 用于分页查询，获取早于此前的消息记录     < lastCreateTime
      */
     private LocalDateTime lastCreateTime;
 

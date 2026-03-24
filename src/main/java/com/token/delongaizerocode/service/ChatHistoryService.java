@@ -1,10 +1,14 @@
 package com.token.delongaizerocode.service;
 
+import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.token.delongaizerocode.model.dto.app.AppQueryRequest;
 import com.token.delongaizerocode.model.dto.chatthistory.ChatHistoryQueryRequest;
 import com.token.delongaizerocode.model.entity.ChatHistory;
+import com.token.delongaizerocode.model.entity.User;
+
+import java.time.LocalDateTime;
 
 /**
  *  服务层。
@@ -39,5 +43,17 @@ public interface ChatHistoryService extends IService<ChatHistory> {
      * @return
      */
     QueryWrapper getQueryWrapper(ChatHistoryQueryRequest chatHistoryQueryRequest);
+
+
+    /**
+     *  分页查询某app的对话记录
+     * @param appId
+     * @param lastCreateTime
+     * @param loginUser
+     * @return
+     */
+    Page<ChatHistory> listAppChatHistory(Long appId,int pageSize, LocalDateTime lastCreateTime, User loginUser);
+
+
 
 }

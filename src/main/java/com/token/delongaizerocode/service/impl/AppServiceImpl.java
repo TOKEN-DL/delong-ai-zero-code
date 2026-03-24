@@ -83,32 +83,34 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         }
 
         //5.在调用AI前，先保存用户消息到数据库中
-//        chatHistoryService.addChatHistory(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
-//
-//        //6.调用AI生成代码（流式）
-//        Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
-//        //7. 收集AI响应的内容
-//        StringBuilder aiResponseBuilder = new StringBuilder();
+        chatHistoryService.addChatHistory(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+
+        //6.调用AI生成代码（流式）
+        Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+        //7. 收集AI响应的内容
+        StringBuilder aiResponseBuilder = new StringBuilder();
         //从这里返回
-//        contentFlux.map(chunk -> {
-//            //实时收集AI响应的内容
-//            aiResponseBuilder.append(chunk);
-//            return chunk;
-//
-//        }).doOnComplete(() -> {
-//            //流式返回完成后，保存AI消息到对话历史中
-//            String aiResponse = aiResponseBuilder.toString();
-//            chatHistoryService.addChatHistory(appId, aiResponse, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
-//        }).doOnError(error ->{
-//            //如果AI返回失败也要存入数据库
-//            String errorMsg = "AI回复失败：" +error.getMessage();
-//            chatHistoryService.addChatHistory(appId, errorMsg, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
-//        });
+        return contentFlux.map(chunk -> {
+            //实时收集AI响应的内容
+            aiResponseBuilder.append(chunk);
+            return chunk;
+
+        }).doOnComplete(() -> {
+            //流式返回完成后，保存AI消息到对话历史中
+            String aiResponse = aiResponseBuilder.toString();
+            //保存消息记录
+            chatHistoryService.addChatHistory(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+        }).doOnError(error ->{
+            //如果AI返回失败也要存入数据库
+            String errorMsg = "AI回复失败：" +error.getMessage();
+            //保存消息记录
+            chatHistoryService.addChatHistory(appId, errorMsg, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+        });
 
 
         //5.调用AI生成代码
 
-        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+        //return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
 
     }
 
@@ -261,6 +263,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         }
         //先删除关联的对话历史
         try {
+            //删除应用前，先删除消息历史
             chatHistoryService.deleteByAppId(appId);
         }catch (Exception e){
             log.error("删除应用关联的对话历史失败： {}" , e.getMessage());
