@@ -1,5 +1,6 @@
 package com.token.delongaizerocode.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
@@ -15,17 +16,23 @@ import com.token.delongaizerocode.model.entity.User;
 import com.token.delongaizerocode.model.enums.ChatHistoryMessageTypeEnum;
 import com.token.delongaizerocode.service.AppService;
 import com.token.delongaizerocode.service.ChatHistoryService;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  *  服务层实现。
  *
  * @author <a href="https://github.com/TOKEN-DL">时雨夏树</a>
  */
+@Slf4j
 @Service
 public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatHistory>  implements ChatHistoryService{
 
@@ -65,13 +72,52 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
 
     }
 
+    @Override
+    public int localChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount){
+
+        try {
+            QueryWrapper queryWrapper = QueryWrapper.create()
+                    .eq(ChatHistory::getAppId, appId)
+                    .orderBy(ChatHistory::getCreateTime, false)
+                    .limit(1, maxCount);
+            List<ChatHistory> historyList = this.list(queryWrapper);
+            if(CollUtil.isEmpty(historyList)){
+                return 0;
+            }
+            //反转列表，确保按照时间正序（老的在前，新的在后）
+            historyList = historyList.reversed();
+            //按照时间顺序添加到记忆中g
+            int loadedCount = 0;
+            //先清理历史缓存，防止重复加载
+            chatMemory.clear();
+            for (ChatHistory history : historyList) {
+                if (ChatHistoryMessageTypeEnum.USER.getValue().equals(history.getMessageType())) {
+                    chatMemory.add(UserMessage.from(history.getMessage()));
+                } else if (ChatHistoryMessageTypeEnum.AI.getValue().equals(history.getMessageType())) {
+                    chatMemory.add(AiMessage.from(history.getMessage()));
+                }
+                loadedCount++;
+            }
+            log.info("成功为appId:{}加载{}条历史消息", appId, loadedCount);
+            return loadedCount;
+
+        } catch (Exception e) {
+            log.error("加载对话历史失败，appId:{}，error:{}", appId, e.getMessage());
+            //加载失败不影响系统运行，只是没有历史上下文
+            return 0;
+        }
+
+
+
+    }
+
 
 
 
     @Override
     public QueryWrapper getQueryWrapper(ChatHistoryQueryRequest chatHistoryQueryRequest) {
         QueryWrapper queryWrapper = QueryWrapper.create();
-        if (chatHistoryQueryRequest != null) {
+        if (chatHistoryQueryRequest == null) {
             return queryWrapper;
         }
         Long id = chatHistoryQueryRequest.getId();
@@ -85,19 +131,19 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         //拼接查询条件
         queryWrapper.eq("id", id)
                 .like("message", message)
-                .eq("message_type", messageType)
-                .eq("app_id", appId)
-                .eq("user_id", userId);
+                .eq("messageType", messageType)
+                .eq("appId", appId)
+                .eq("userId", userId);
         //游标查询逻辑 - 只使用createTime 作为游标
         if (lastCreateTime != null) {
-            queryWrapper.lt("create_time", lastCreateTime); // 小于创建时间的数据
+            queryWrapper.lt("createTime", lastCreateTime); // 小于创建时间的数据
         }
         //排序
         if (StrUtil.isNotBlank(sortField)) {
-            queryWrapper.like("sort_field", "ascend".equals(sortField));
+            queryWrapper.like(sortField, "ascend".equals(sortField));
         } else {
             // 默认按创建时间降序排列
-            queryWrapper.orderBy("create_time", false);
+            queryWrapper.orderBy("createTime", false);
         }
         return queryWrapper;
 
@@ -106,16 +152,16 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
     }
 
     @Override
-    public Page<ChatHistory> listAppChatHistory(Long appId,int pageSize, LocalDateTime lastCreateTime, User loginUser) {
+    public Page<ChatHistory> listAppChatHistoryByPage(Long appId,int pageSize, LocalDateTime lastCreateTime, User loginUser) {
         //校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID不能为空");
-        ThrowUtils.throwIf(pageSize <= 0 || pageSize > 500, ErrorCode.PARAMS_ERROR, "页面大小必须在1-50之间");
+        ThrowUtils.throwIf(pageSize <= 0 || pageSize > 50, ErrorCode.PARAMS_ERROR, "页面大小必须在1-50之间");
         ThrowUtils.throwIf(loginUser == null, ErrorCode.PARAMS_ERROR, "用户未登录");
         //验证权限，只有创建者和管理员可以看
         App app = appService.getById(appId);
         boolean isAdmin = UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole());
         boolean isCreator = app.getUserId().equals(loginUser.getId());
-        ThrowUtils.throwIf(!isCreator || !isAdmin, ErrorCode.NOT_AUTH_ERROR, "无权查看应用对话历史");
+        ThrowUtils.throwIf(!isAdmin ||!isCreator, ErrorCode.NOT_AUTH_ERROR, "无权查看应用对话历史");
         //构建查询条件
         ChatHistoryQueryRequest queryRequest = new ChatHistoryQueryRequest();
         queryRequest.setAppId(appId);

@@ -13,7 +13,8 @@
       "Bash(curl -s \"http://localhost:8124/api/app/chat/gen/code?appId=1&message=test\" -H \"Accept: text/event-stream\" --max-time 5)",
       "Bash(curl -v \"http://localhost:8124/api/app/chat/gen/code?appId=1&message=test\" -H \"Accept: text/event-stream\" --max-time 5)",
       "Bash(curl -s -X POST http://localhost:8124/api/app/admin/list/page -H \"Content-Type: application/json\" -d '{\"\"\"\"pageNum\"\"\"\":1,\"\"\"\"pageSize\"\"\"\":10}')",
-      "Bash(curl -s -X POST http://localhost:8124/api/app/list/page -H \"Content-Type: application/json\" -d '{\"\"pageNum\"\":1,\"\"pageSize\"\":10}')"
+      "Bash(curl -s -X POST http://localhost:8124/api/app/list/page -H \"Content-Type: application/json\" -d '{\"\"pageNum\"\":1,\"\"pageSize\"\":10}')",
+      "Bash(find d:/code/Java/delong-ai-zero-code/delong-ai-zero-code-frontend/src -name *.tsx -o -name *.ts -o -name *.vue)"
     ]
   }
 }

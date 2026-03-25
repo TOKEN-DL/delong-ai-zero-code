@@ -54,8 +54,9 @@ public class ChatHistoryController {
                                                               @RequestParam(defaultValue = "10") int pageSize,
                                                               @RequestParam(required = false) LocalDateTime lastCreateTime,
                                                               HttpServletRequest request) {
+        ThrowUtils.throwIf(appId == null,ErrorCode.PARAMS_ERROR,"应用ID为空" );
         User loginUser = userService.getLoginUser(request);
-        Page<ChatHistory> result = chatHistoryService.listAppChatHistory(appId, pageSize, lastCreateTime, loginUser);
+        Page<ChatHistory> result = chatHistoryService.listAppChatHistoryByPage(appId, pageSize, lastCreateTime, loginUser);
         return ResultUtils.success(result);
 
     }
@@ -72,7 +73,7 @@ public class ChatHistoryController {
     public BaseResponse<Page<ChatHistory>> listAppChatHistoryByPageForAdmin(@RequestBody ChatHistoryQueryRequest chatHistoryQueryRequest){
         ThrowUtils.throwIf(chatHistoryQueryRequest == null, ErrorCode.PARAMS_ERROR);
         long pageSize = chatHistoryQueryRequest.getPageSize();
-        int pageNum = chatHistoryQueryRequest.getPageNum();
+        long pageNum = chatHistoryQueryRequest.getPageNum();
         //查数据
         QueryWrapper queryWrapper = chatHistoryService.getQueryWrapper(chatHistoryQueryRequest);
         Page<ChatHistory> result = chatHistoryService.page(Page.of(pageNum, pageSize), queryWrapper);

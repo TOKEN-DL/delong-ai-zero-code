@@ -7,6 +7,7 @@ import com.token.delongaizerocode.model.dto.app.AppQueryRequest;
 import com.token.delongaizerocode.model.dto.chatthistory.ChatHistoryQueryRequest;
 import com.token.delongaizerocode.model.entity.ChatHistory;
 import com.token.delongaizerocode.model.entity.User;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 
 import java.time.LocalDateTime;
 
@@ -38,6 +39,16 @@ public interface ChatHistoryService extends IService<ChatHistory> {
 
 
     /**
+     *  加载历史对话到缓存
+     *
+     * @param appId 应用ID
+     * @param chatMemory 历史对话
+     * @param maxCount 最大数
+     * @return 加载成功多少条
+     */
+    int localChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount);
+
+    /**
      * 根据查询条件构造数据查询参数
      * @param chatHistoryQueryRequest
      * @return
@@ -52,7 +63,7 @@ public interface ChatHistoryService extends IService<ChatHistory> {
      * @param loginUser
      * @return
      */
-    Page<ChatHistory> listAppChatHistory(Long appId,int pageSize, LocalDateTime lastCreateTime, User loginUser);
+    Page<ChatHistory> listAppChatHistoryByPage(Long appId,int pageSize, LocalDateTime lastCreateTime, User loginUser);
 
 
 

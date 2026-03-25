@@ -1,6 +1,6 @@
 declare namespace API {
   type App = {
-    id?: string | number
+    id?: number
     appName?: string
     cover?: string
     initPrompt?: string
@@ -8,7 +8,7 @@ declare namespace API {
     deployKey?: string
     deployedTime?: string
     priority?: number
-    userId?: string | number
+    userId?: number
     editTime?: string
     createTime?: string
     updateTime?: string
@@ -20,7 +20,7 @@ declare namespace API {
   }
 
   type AppDeployRequest = {
-    appId?: string | number
+    appId?: number
   }
 
   type AppQueryRequest = {
@@ -28,31 +28,31 @@ declare namespace API {
     pageSize?: number
     sortField?: string
     sortOrder?: string
-    id?: string | number
+    id?: number
     appName?: string
     cover?: string
     initPrompt?: string
     codeGenType?: string
     deployKey?: string
     priority?: number
-    userId?: string | number
+    userId?: number
     featured?: boolean
   }
 
   type AppUpdateByAdminRequest = {
-    id?: string | number
+    id?: number
     appName?: string
     cover?: string
     priority?: number
   }
 
   type AppUpdateRequest = {
-    id?: string | number
+    id?: number
     appName?: string
   }
 
   type AppVO = {
-    id?: string | number
+    id?: number
     appName?: string
     cover?: string
     initPrompt?: string
@@ -60,7 +60,7 @@ declare namespace API {
     deployKey?: string
     deployedTime?: string
     priority?: number
-    userId?: string | number
+    userId?: number
     editTime?: string
     createTime?: string
     updateTime?: string
@@ -93,13 +93,19 @@ declare namespace API {
 
   type BaseResponseLong = {
     code?: number
-    data?: string | number
+    data?: number
     message?: string
   }
 
   type BaseResponsePageAppVO = {
     code?: number
     data?: PageAppVO
+    message?: string
+  }
+
+  type BaseResponsePageChatHistory = {
+    code?: number
+    data?: PageChatHistory
     message?: string
   }
 
@@ -128,47 +134,62 @@ declare namespace API {
   }
 
   type ChatHistory = {
-    id?: string | number
+    id?: number
     message?: string
     messageType?: string
-    appId?: string | number
-    userId?: string | number
+    appId?: number
+    userId?: number
     createTime?: string
     updateTime?: string
     isDelete?: number
   }
 
+  type ChatHistoryQueryRequest = {
+    pageNum?: number
+    pageSize?: number
+    sortField?: string
+    sortOrder?: string
+    id?: number
+    message?: string
+    messageType?: string
+    appId?: number
+    userId?: number
+    lastCreateTime?: string
+  }
+
   type chatToGenCodeParams = {
-    appId: string | number
+    appId: number
     message: string
   }
 
   type DeleteRequest = {
-    id?: string | number
+    id?: number
   }
 
   type getAppByIdAdminParams = {
-    id: string | number
+    id: number
   }
 
   type getAppByIdParams = {
-    id: string | number
-  }
-
-  type getInfoParams = {
-    id: string | number
+    id: number
   }
 
   type getUserByIdParams = {
-    id: string | number
+    id: number
   }
 
   type getUserOVByIdParams = {
-    id: string | number
+    id: number
+  }
+
+  type listAppChatHistoryParams = {
+    appId: number
+    pageSize?: number
+    lastCreateTime?: string
   }
 
   type LoginUserVO = {
-    id?: string | number
+    id?: number
     userAccount?: string
     userName?: string
     userAvatar?: string
@@ -196,10 +217,6 @@ declare namespace API {
     optimizeCountQuery?: boolean
   }
 
-  type pageParams = {
-    page: PageChatHistory
-  }
-
   type PageUserVO = {
     records?: UserVO[]
     pageNumber?: number
@@ -209,10 +226,6 @@ declare namespace API {
     optimizeCountQuery?: boolean
   }
 
-  type removeParams = {
-    id: string | number
-  }
-
   type ServerSentEventString = true
 
   type serveStaticResourceParams = {
@@ -220,7 +233,7 @@ declare namespace API {
   }
 
   type User = {
-    id?: string | number
+    id?: number
     userAccount?: string
     userPassword?: string
     userName?: string
@@ -251,7 +264,7 @@ declare namespace API {
     pageSize?: number
     sortField?: string
     sortOrder?: string
-    id?: string | number
+    id?: number
     userName?: string
     userAccount?: string
     userAvatar?: string
@@ -266,7 +279,7 @@ declare namespace API {
   }
 
   type UserUpdateRequest = {
-    id?: string | number
+    id?: number
     userName?: string
     userAvatar?: string
     userProfile?: string
@@ -274,7 +287,7 @@ declare namespace API {
   }
 
   type UserVO = {
-    id?: string | number
+    id?: number
     userName?: string
     userAccount?: string
     userAvatar?: string

@@ -1,6 +1,11 @@
 spring:
   application:
     name: delong-ai-zero-code
+  #session配置
+  session:
+    store-type: redis
+    # session过期时间
+    timeout: 2592000
 
   profiles:
     active: local
@@ -10,6 +15,10 @@ server:
   port: 8124
   servlet:
     context-path: /api
+    # cookie 30天过期
+    session:
+      cookie:
+        max-age: 2592000
 
 
 
