@@ -15,6 +15,7 @@ const submitLoading = ref(false)
 
 // 表单数据
 const formData = ref<API.AppUpdateRequest | API.AppUpdateByAdminRequest>({
+  // @ts-ignore 避免大数字精度丢失
   id: appId.value,
   appName: '',
 })
@@ -27,9 +28,14 @@ const fetchAppInfo = async () => {
   loading.value = true
   try {
     // 管理员使用管理员接口，普通用户使用普通接口
-    const res = isAdmin.value
-      ? await getAppByIdAdmin({ id: appId.value })
-      : await getAppById({ id: appId.value })
+    let res
+    if (isAdmin.value) {
+      // @ts-ignore 避免大数字精度丢失
+      res = await getAppByIdAdmin({ id: appId.value })
+    } else {
+      // @ts-ignore 避免大数字精度丢失
+      res = await getAppById({ id: appId.value })
+    }
 
     if (res.data.code === 0 && res.data.data) {
       const app = res.data.data

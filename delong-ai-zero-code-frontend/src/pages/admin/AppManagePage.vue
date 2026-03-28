@@ -274,6 +274,7 @@ const doFeatured = (id: string | number) => {
     onOk: async () => {
       try {
         const res = await updateAppAdmin({
+          // @ts-ignore 避免大数字精度丢失
           id: id,
           priority: 99,
         })
@@ -305,6 +306,7 @@ const doDelete = (id: string | number) => {
     okType: 'danger',
     onOk: async () => {
       try {
+        // @ts-ignore 避免大数字精度丢失
         const res = await deleteAppAdmin({ id })
         if (res.data.code === 0) {
           message.success('删除成功')

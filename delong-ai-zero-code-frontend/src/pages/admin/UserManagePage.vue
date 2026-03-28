@@ -165,6 +165,7 @@ const doDelete = async (id: string | number) => {
   if (!id) {
     return
   }
+  // @ts-ignore 避免大数字精度丢失
   const res = await deleteUser({ id })
   if (res.data.code === 0) {
     message.success('删除成功')

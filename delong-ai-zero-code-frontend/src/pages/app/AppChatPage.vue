@@ -682,7 +682,7 @@ onMounted(async () => {
           type="primary"
           size="large"
           :loading="deploying"
-          :disabled="!codeGenerated"
+          :disabled="!showPreview"
           @click="handleDeploy"
         >
           <template #icon>

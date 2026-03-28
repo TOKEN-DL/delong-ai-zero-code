@@ -9,6 +9,13 @@ spring:
 
   profiles:
     active: local
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      ttl: 3600
+      database: 0
 
 
 server:
