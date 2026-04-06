@@ -2,6 +2,7 @@ package com.token.delongaizerocode.controller;
 
 import cn.hutool.json.JSONUtil;
 import com.mybatisflex.core.paginate.Page;
+import com.token.delongaizerocode.ai.AiCodeGenTypeRoutingService;
 import com.token.delongaizerocode.annotation.AuthnCheck;
 import com.token.delongaizerocode.common.BaseResponse;
 import com.token.delongaizerocode.common.DeleteRequest;
@@ -17,10 +18,12 @@ import com.token.delongaizerocode.model.entity.User;
 import com.token.delongaizerocode.model.enums.CodeGenTypeEnum;
 import com.token.delongaizerocode.model.vo.AppVO;
 import com.token.delongaizerocode.service.AppService;
+import com.token.delongaizerocode.service.ProjectDownloadService;
 import com.token.delongaizerocode.service.UserService;
 import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.BeanUtils;
 import org.springframework.http.MediaType;
@@ -30,6 +33,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.awt.*;
+import java.io.File;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +53,11 @@ public class AppController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private ProjectDownloadService projectDownloadService;
+
+
 
 
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -109,6 +118,38 @@ public class AppController {
     }
 
 
+    @GetMapping("/download/{appId}")
+    public void downloadAppCode(@RequestParam Long appId,
+                                HttpServletRequest request,
+                                HttpServletResponse response){
+        //1.基础校验
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
+
+        //2.查询应用信息
+        App app = appService.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_LOGIN_ERROR, "应用不存在");
+        //3.权益校验：只有应用创建者才可以下载代码
+        User loginUser = userService.getLoginUser(request);
+        if (!app.getUserId().equals(loginUser.getId())){
+            throw new BusinessException(ErrorCode.NOT_AUTH_ERROR, "无权限下载该应用代码");
+        }
+        //4.构建应用代码目录路径（生成路径，非部署路径）
+        String codeGenType = app.getCodeGenType();
+        String sourceDirName = codeGenType + "_" + appId;
+        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
+        //5.检查代码目录是否存在
+        File sourceDir = new File(sourceDirPath);
+        ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(),
+                ErrorCode.PARAMS_ERROR, "应用不存在，请先生成代码");
+        //6.生成下载文件名
+        String downloadFileName = String.valueOf(appId);
+        //7.调用通用业务下载服务
+        projectDownloadService.downloadProjectAsZip(sourceDirPath,downloadFileName,response);
+
+
+    }
+
+
 
     /**
      * 创建应用（用户）
@@ -122,35 +163,9 @@ public class AppController {
         if (appAddRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        String initPrompt = appAddRequest.getInitPrompt();
-        ThrowUtils.throwIf(StringUtils.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化prompt不能为空");
-        App app = new App();
-        BeanUtils.copyProperties(appAddRequest, app);
-
-        // 获取当前登录用户
-        User loginUser = (User) request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
-        if (loginUser == null || loginUser.getId() == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-        }
-        app.setUserId(loginUser.getId());
-
-        // 校验应用数据
-        //appService.validApp(app);
-
-        // 设置默认优先级
-        if (app.getPriority() == null) {
-            app.setPriority(0);
-        }
-        //应用名称展示为前12位
-        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
-
-        //暂时设置位多文件生成
-        //占时设置成为VUE工程生成
-        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
-        //插入数据库
-        boolean result = appService.save(app);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
-        return ResultUtils.success(app.getId());
+        User loginUser = userService.getLoginUser(request);
+        Long appId = appService.createApp(appAddRequest, loginUser);
+        return ResultUtils.success(appId);
     }
 
     /**

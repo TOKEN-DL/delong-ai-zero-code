@@ -6,7 +6,8 @@ import { getAppById, deployApp, deleteApp } from '@/api/appController'
 import { listAppChatHistory } from '@/api/chatHistoryController'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { getSSEUrl, getAppPreviewUrl } from '@/config'
-import { SendOutlined, RocketOutlined, AppstoreOutlined, ArrowLeftOutlined, InfoCircleOutlined, UserOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue'
+import { getCodeGenTypeLabel } from '@/constants/app'
+import { SendOutlined, RocketOutlined, AppstoreOutlined, ArrowLeftOutlined, InfoCircleOutlined, UserOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons-vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
 
@@ -148,6 +149,9 @@ const showPreview = computed(() => {
 // 部署状态
 const deploying = ref(false)
 const deployedUrl = ref('')
+
+// 下载状态
+const downloading = ref(false)
 
 // 消息容器引用
 const messagesContainer = ref<HTMLElement | null>(null)
@@ -552,6 +556,67 @@ const handleDeploy = async () => {
   }
 }
 
+// 下载应用代码
+const handleDownload = async () => {
+  if (!appInfo.value) {
+    return
+  }
+
+  downloading.value = true
+  try {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+    const url = `${API_BASE_URL}/app/download/${appId.value}?appId=${appId.value}`
+
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      // 尝试解析错误信息
+      let errorMsg = `下载失败: ${response.status}`
+      try {
+        const errorData = await response.json()
+        errorMsg = errorData.message || errorData.msg || errorMsg
+      } catch (e) {
+        // 忽略解析错误
+      }
+      message.error(errorMsg)
+      return
+    }
+
+    // 从 Content-Disposition 头获取文件名
+    const contentDisposition = response.headers.get('Content-Disposition')
+    let filename = `${appInfo.value.appName || 'app'}.zip`
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="?(.+?)"?$/)
+      if (match && match[1]) {
+        filename = match[1]
+      }
+    }
+
+    // 获取 blob 数据
+    const blob = await response.blob()
+
+    // 创建下载链接
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(downloadUrl)
+
+    message.success('下载成功')
+  } catch (error) {
+    console.error('下载失败:', error)
+    message.error('下载失败')
+  } finally {
+    downloading.value = false
+  }
+}
+
 // 返回首页
 const goBack = () => {
   router.push('/')
@@ -682,6 +747,9 @@ onMounted(async () => {
         <div class="app-info">
           <AppstoreOutlined class="app-icon" />
           <h1>{{ appInfo?.appName || '未命名应用' }}</h1>
+          <a-tag v-if="appInfo?.codeGenType" color="processing" class="code-gen-type-tag">
+            {{ getCodeGenTypeLabel(appInfo.codeGenType) }}
+          </a-tag>
         </div>
       </div>
       <div class="right-section">
@@ -704,6 +772,16 @@ onMounted(async () => {
                 <div class="detail-label">创建时间</div>
                 <div class="detail-value">{{ formatDateTime(appInfo?.createTime) }}</div>
               </div>
+              <!-- 生成类型 -->
+              <div class="detail-item">
+                <div class="detail-label">生成类型</div>
+                <div class="detail-value">
+                  <a-tag v-if="appInfo?.codeGenType" color="processing">
+                    {{ getCodeGenTypeLabel(appInfo.codeGenType) }}
+                  </a-tag>
+                  <span v-else>-</span>
+                </div>
+              </div>
               <!-- 操作栏（仅本人或管理员可见） -->
               <div v-if="canManage" class="detail-actions">
                 <a-button type="default" size="small" @click="editApp">
@@ -722,6 +800,18 @@ onMounted(async () => {
             应用详情
           </a-button>
         </a-popover>
+        <!-- 下载代码按钮 -->
+        <a-button
+          size="large"
+          :loading="downloading"
+          :disabled="!showPreview"
+          @click="handleDownload"
+        >
+          <template #icon>
+            <DownloadOutlined />
+          </template>
+          下载代码
+        </a-button>
         <!-- 部署按钮 -->
         <a-button
           type="primary"
@@ -898,6 +988,11 @@ onMounted(async () => {
   font-size: 20px;
   font-weight: 600;
   color: #0c4a6e;
+}
+
+.code-gen-type-tag {
+  margin-left: 4px;
+  font-size: 12px;
 }
 
 /* 应用详情悬浮窗 */
