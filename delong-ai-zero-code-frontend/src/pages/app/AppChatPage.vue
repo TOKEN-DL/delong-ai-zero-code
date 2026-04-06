@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick, onUnmounted, computed } from 'vue'
+import { ref, onMounted, nextTick, onUnmounted, computed, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { getAppById, deployApp, deleteApp } from '@/api/appController'
@@ -137,6 +137,9 @@ const chatHistoryTotal = ref(0)
 const codeGenerated = ref(false)
 const generatedFiles = ref<string[]>([])
 
+// 预览 iframe 刷新 key
+const previewKey = ref(Date.now())
+
 // 是否显示网站预览（代码已生成 或 至少有2条对话记录）
 const showPreview = computed(() => {
   return codeGenerated.value || chatHistoryTotal.value >= 2
@@ -148,6 +151,9 @@ const deployedUrl = ref('')
 
 // 消息容器引用
 const messagesContainer = ref<HTMLElement | null>(null)
+
+// 预览 iframe 引用
+const previewIframe = ref<HTMLIFrameElement | null>(null)
 
 // SSE 连接控制器
 let abortController: AbortController | null = null
@@ -426,6 +432,24 @@ const startCodeGen = async (prompt: string) => {
     codeGenerated.value = true
     console.log('生成完成, 最终内容长度:', fullContent.length)
 
+    // 延迟刷新预览区域，等待后端文件写入完成和 DOM 更新
+    nextTick(() => {
+      setTimeout(() => {
+        previewKey.value = Date.now()
+        // 尝试直接刷新 iframe
+        nextTick(() => {
+          if (previewIframe.value?.contentWindow) {
+            try {
+              previewIframe.value.contentWindow.location.reload()
+              console.log('预览 iframe 已通过 reload 刷新')
+            } catch (e) {
+              console.log('预览区域已通过 key 刷新')
+            }
+          }
+        })
+      }, 1000)
+    })
+
     const msg = messages.value[aiMessageIndex]
     if (msg) {
       if (fullContent) {
@@ -493,10 +517,31 @@ const handleDeploy = async () => {
     // @ts-ignore 避免大数字精度丢失
     const res = await deployApp({ appId: appId.value })
     if (res.data.code === 0 && res.data.data) {
-      deployedUrl.value = res.data.data
-      message.success('部署成功！')
-      // 在新窗口打开部署的网站
-      window.open(deployedUrl.value, '_blank')
+      const url = res.data.data
+      deployedUrl.value = url
+      Modal.confirm({
+        icon: h('span', { style: 'font-size: 22px' }, '🎉'),
+        title: '部署成功',
+        content: h('div', { style: 'margin-top: 8px' }, [
+          h('p', { style: 'margin-bottom: 12px; color: #666' }, '您的应用已成功部署，可以通过以下链接访问：'),
+          h('div', {
+            style: 'background: #f5f5f5; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 12px;'
+          }, [
+            h('span', { style: 'color: #1890ff; word-break: break-all; flex: 1' }, url),
+            h('button', {
+              style: 'background: #1890ff; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; white-space: nowrap; font-size: 13px',
+              onClick: () => {
+                navigator.clipboard.writeText(url)
+                message.success('链接已复制')
+              }
+            }, '复制链接')
+          ])
+        ]),
+        okText: '访问应用',
+        cancelText: '关闭',
+        width: 520,
+        onOk: () => window.open(url, '_blank')
+      })
     } else {
       message.error(res.data.message || '部署失败')
     }
@@ -780,7 +825,9 @@ onMounted(async () => {
         <div class="preview-container">
           <div v-if="showPreview && appInfo" class="preview-iframe-wrapper">
             <iframe
-              :src="getAppPreviewUrl(appInfo.codeGenType || '', appInfo.id || '')"
+              ref="previewIframe"
+              :src="getAppPreviewUrl(appInfo.codeGenType || '', appInfo.id || '') + '?t=' + previewKey"
+              :key="previewKey"
               class="preview-iframe"
               frameborder="0"
             />
@@ -1208,18 +1255,18 @@ onMounted(async () => {
   }
 }
 
-/* Markdown 内容样式 */
+/* Markdown 内容样式 - 使用 :deep() 穿透 scoped 样式 */
 .markdown-content {
   font-size: 14px;
   line-height: 1.7;
 }
 
-.markdown-content h1,
-.markdown-content h2,
-.markdown-content h3,
-.markdown-content h4,
-.markdown-content h5,
-.markdown-content h6 {
+.markdown-content :deep(h1),
+.markdown-content :deep(h2),
+.markdown-content :deep(h3),
+.markdown-content :deep(h4),
+.markdown-content :deep(h5),
+.markdown-content :deep(h6) {
   margin-top: 16px;
   margin-bottom: 8px;
   font-weight: 600;
@@ -1227,36 +1274,36 @@ onMounted(async () => {
   color: #0c4a6e;
 }
 
-.markdown-content h1 { font-size: 1.5em; }
-.markdown-content h2 { font-size: 1.3em; }
-.markdown-content h3 { font-size: 1.15em; }
-.markdown-content h4 { font-size: 1em; }
+.markdown-content :deep(h1) { font-size: 1.5em; }
+.markdown-content :deep(h2) { font-size: 1.3em; }
+.markdown-content :deep(h3) { font-size: 1.15em; }
+.markdown-content :deep(h4) { font-size: 1em; }
 
-.markdown-content p {
+.markdown-content :deep(p) {
   margin: 8px 0;
 }
 
-.markdown-content ul,
-.markdown-content ol {
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
   padding-left: 20px;
   margin: 8px 0;
 }
 
-.markdown-content li {
+.markdown-content :deep(li) {
   margin: 4px 0;
 }
 
-.markdown-content a {
+.markdown-content :deep(a) {
   color: #0ea5e9;
   text-decoration: none;
 }
 
-.markdown-content a:hover {
+.markdown-content :deep(a:hover) {
   text-decoration: underline;
   color: #0284c7;
 }
 
-.markdown-content blockquote {
+.markdown-content :deep(blockquote) {
   border-left: 4px solid #0ea5e9;
   padding-left: 12px;
   margin: 8px 0;
@@ -1266,33 +1313,33 @@ onMounted(async () => {
   border-radius: 4px;
 }
 
-.markdown-content table {
+.markdown-content :deep(table) {
   border-collapse: collapse;
   margin: 8px 0;
   width: 100%;
 }
 
-.markdown-content th,
-.markdown-content td {
+.markdown-content :deep(th),
+.markdown-content :deep(td) {
   border: 1px solid #bae6fd;
   padding: 8px 12px;
   text-align: left;
 }
 
-.markdown-content th {
+.markdown-content :deep(th) {
   background: #e0f2fe;
   font-weight: 600;
   color: #0c4a6e;
 }
 
-.markdown-content hr {
+.markdown-content :deep(hr) {
   border: none;
   border-top: 1px solid #e0f2fe;
   margin: 16px 0;
 }
 
 /* 行内代码样式 */
-.markdown-content code {
+.markdown-content :deep(code) {
   background: rgba(14, 165, 233, 0.1);
   color: #0284c7;
   padding: 2px 6px;
@@ -1302,7 +1349,7 @@ onMounted(async () => {
 }
 
 /* 代码块容器 */
-.markdown-content .code-block-wrapper {
+.markdown-content :deep(.code-block-wrapper) {
   background: #1e293b;
   border-radius: 10px;
   margin: 12px 0;
@@ -1311,7 +1358,7 @@ onMounted(async () => {
 }
 
 /* 代码块头部 */
-.code-block-header {
+.markdown-content :deep(.code-block-header) {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1320,7 +1367,7 @@ onMounted(async () => {
   border-bottom: 1px solid #475569;
 }
 
-.code-lang {
+.markdown-content :deep(.code-lang) {
   font-size: 12px;
   color: #7dd3fc;
   font-weight: 500;
@@ -1328,7 +1375,7 @@ onMounted(async () => {
   letter-spacing: 0.5px;
 }
 
-.code-copy-btn {
+.markdown-content :deep(.code-copy-btn) {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -1342,24 +1389,24 @@ onMounted(async () => {
   transition: all 0.2s ease;
 }
 
-.code-copy-btn:hover {
+.markdown-content :deep(.code-copy-btn:hover) {
   background: #475569;
   border-color: #38bdf8;
   color: #38bdf8;
 }
 
-.code-copy-btn.copied {
+.markdown-content :deep(.code-copy-btn.copied) {
   background: rgba(74, 222, 128, 0.15);
   border-color: #4ade80;
   color: #4ade80;
 }
 
-.code-copy-btn .copy-icon {
+.markdown-content :deep(.copy-icon) {
   font-size: 12px;
 }
 
 /* 代码块主体 */
-.markdown-content .code-block {
+.markdown-content :deep(.code-block) {
   background: #1e293b;
   padding: 16px;
   margin: 0;
@@ -1367,7 +1414,7 @@ onMounted(async () => {
   border-radius: 0;
 }
 
-.markdown-content .code-block code {
+.markdown-content :deep(.code-block code) {
   background: transparent;
   padding: 0;
   color: #e2e8f0;
@@ -1377,134 +1424,134 @@ onMounted(async () => {
 }
 
 /* Highlight.js Ocean Blue 主题 */
-.markdown-content .hljs {
+.markdown-content :deep(.hljs) {
   background: transparent;
   padding: 0;
 }
 
 /* 关键字 - 青色 */
-.markdown-content .hljs-keyword,
-.markdown-content .hljs-selector-tag,
-.markdown-content .hljs-built_in,
-.markdown-content .hljs-class {
+.markdown-content :deep(.hljs-keyword),
+.markdown-content :deep(.hljs-selector-tag),
+.markdown-content :deep(.hljs-built_in),
+.markdown-content :deep(.hljs-class) {
   color: #22d3ee;
 }
 
 /* 字符串 - 绿色 */
-.markdown-content .hljs-string,
-.markdown-content .hljs-attr,
-.markdown-content .hljs-template-variable,
-.markdown-content .hljs-doctag {
+.markdown-content :deep(.hljs-string),
+.markdown-content :deep(.hljs-attr),
+.markdown-content :deep(.hljs-template-variable),
+.markdown-content :deep(.hljs-doctag) {
   color: #4ade80;
 }
 
 /* 数字 - 橙色 */
-.markdown-content .hljs-number,
-.markdown-content .hljs-literal {
+.markdown-content :deep(.hljs-number),
+.markdown-content :deep(.hljs-literal) {
   color: #fb923c;
 }
 
 /* 函数 - 蓝色 */
-.markdown-content .hljs-function,
-.markdown-content .hljs-title {
+.markdown-content :deep(.hljs-function),
+.markdown-content :deep(.hljs-title) {
   color: #60a5fa;
 }
 
 /* 注释 - 灰色 */
-.markdown-content .hljs-comment,
-.markdown-content .hljs-quote {
+.markdown-content :deep(.hljs-comment),
+.markdown-content :deep(.hljs-quote) {
   color: #64748b;
   font-style: italic;
 }
 
 /* 变量 - 粉色 */
-.markdown-content .hljs-variable,
-.markdown-content .hljs-params {
+.markdown-content :deep(.hljs-variable),
+.markdown-content :deep(.hljs-params) {
   color: #f472b6;
 }
 
 /* 标签名 */
-.markdown-content .hljs-tag {
+.markdown-content :deep(.hljs-tag) {
   color: #f472b6;
 }
 
-.markdown-content .hljs-name {
+.markdown-content :deep(.hljs-name) {
   color: #f472b6;
 }
 
 /* 属性 - 黄色 */
-.markdown-content .hljs-attribute {
+.markdown-content :deep(.hljs-attribute) {
   color: #fbbf24;
 }
 
 /* HTML 特定 */
-.markdown-content .hljs-tag .hljs-attr {
+.markdown-content :deep(.hljs-tag .hljs-attr) {
   color: #fbbf24;
 }
 
-.markdown-content .hljs-tag .hljs-string {
+.markdown-content :deep(.hljs-tag .hljs-string) {
   color: #4ade80;
 }
 
 /* CSS 特定 */
-.markdown-content .hljs-selector-id,
-.markdown-content .hljs-selector-class {
+.markdown-content :deep(.hljs-selector-id),
+.markdown-content :deep(.hljs-selector-class) {
   color: #f472b6;
 }
 
-.markdown-content .hljs-property,
-.markdown-content .hljs-rule .hljs-keyword {
+.markdown-content :deep(.hljs-property),
+.markdown-content :deep(.hljs-rule .hljs-keyword) {
   color: #60a5fa;
 }
 
 /* JavaScript/TypeScript 特定 */
-.markdown-content .hljs-meta {
+.markdown-content :deep(.hljs-meta) {
   color: #60a5fa;
 }
 
-.markdown-content .hljs-symbol,
-.markdown-content .hljs-bullet {
+.markdown-content :deep(.hljs-symbol),
+.markdown-content :deep(.hljs-bullet) {
   color: #60a5fa;
 }
 
 /* JSON 特定 */
-.markdown-content .hljs-addition {
+.markdown-content :deep(.hljs-addition) {
   color: #4ade80;
 }
 
-.markdown-content .hljs-deletion {
+.markdown-content :deep(.hljs-deletion) {
   color: #f472b6;
 }
 
 /* 正则表达式 */
-.markdown-content .hljs-regexp {
+.markdown-content :deep(.hljs-regexp) {
   color: #4ade80;
 }
 
 /* 强调 */
-.markdown-content .hljs-emphasis {
+.markdown-content :deep(.hljs-emphasis) {
   font-style: italic;
 }
 
-.markdown-content .hljs-strong {
+.markdown-content :deep(.hljs-strong) {
   font-weight: bold;
 }
 
 /* 滚动条美化 */
-.markdown-content .code-block::-webkit-scrollbar {
+.markdown-content :deep(.code-block::-webkit-scrollbar) {
   height: 8px;
 }
 
-.markdown-content .code-block::-webkit-scrollbar-track {
+.markdown-content :deep(.code-block::-webkit-scrollbar-track) {
   background: #1e293b;
 }
 
-.markdown-content .code-block::-webkit-scrollbar-thumb {
+.markdown-content :deep(.code-block::-webkit-scrollbar-thumb) {
   background: #475569;
   border-radius: 4px;
 }
 
-.markdown-content .code-block::-webkit-scrollbar-thumb:hover {
+.markdown-content :deep(.code-block::-webkit-scrollbar-thumb:hover) {
   background: #0ea5e9;
 }
 </style>

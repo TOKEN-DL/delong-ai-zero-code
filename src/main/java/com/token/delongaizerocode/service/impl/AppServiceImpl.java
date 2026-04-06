@@ -8,6 +8,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.token.delongaizerocode.constant.AppConstant;
 import com.token.delongaizerocode.core.AiCodeGeneratorFacade;
+import com.token.delongaizerocode.core.builder.VueProjectBuilder;
 import com.token.delongaizerocode.core.handler.StreamHandlerExecutor;
 import com.token.delongaizerocode.exception.ThrowUtils;
 import com.token.delongaizerocode.model.entity.App;
@@ -22,6 +23,7 @@ import com.token.delongaizerocode.model.vo.AppVO;
 import com.token.delongaizerocode.model.vo.UserVO;
 import com.token.delongaizerocode.service.AppService;
 import com.token.delongaizerocode.service.ChatHistoryService;
+import com.token.delongaizerocode.service.ScreenshotService;
 import com.token.delongaizerocode.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +63,12 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     @Resource
     private StreamHandlerExecutor streamHandlerExecutor;
 
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
+
+    @Resource
+    private ScreenshotService screenshotService;
+
 
     @Override
     public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
@@ -92,6 +100,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         //6.调用AI生成代码（流式）
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
         //7. 收集AI响应的内容
+        //根据不同的工程类型处理不同的数据
         return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum);
 
 
@@ -128,24 +137,36 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         //5.获取代码生成类型，获取原始代码生成路径
         String codeGenType = app.getCodeGenType();
         String sourceDirName = codeGenType + "_" +appId;
-        String sourceFilePath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
+        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
 
         //6.检查路径是否存在
-        File sourceDir = new File(sourceFilePath);
+        File sourceDir = new File(sourceDirPath);
         if (!sourceDir.exists() || !sourceDir.isDirectory()){
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "应用代码不存在，请先生成应用");
         }
 
-        //7.复制文件到部署目录
+        //7. Vue项目需要进行特殊构建
+        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
+        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT){
+            // Vue需要构建
+            boolean buildSuccess = vueProjectBuilder.buildProject(sourceDirPath);
+            ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "Vue项目构建失败，请重试");
+            //检查dist 目录是否存在
+            File distDir = new File(sourceDirPath, "dist");
+            ThrowUtils.throwIf(!distDir.exists() , ErrorCode.SYSTEM_ERROR, "Vue项目构建完成但是未生成dist目录");
+            //完成构建后，需要将构建后的文件复制到部署目录
+            sourceDir = distDir;
+        }
+        //8.复制文件到部署目录
 
         String deployDirPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
         try {
             FileUtil.copyContent(sourceDir, new File(deployDirPath), true);
         } catch (Exception e){
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "应用部署失败");
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "应用部署失败" + e.getMessage());
         }
 
-        //8.更新数据库
+        //9.更新数据库
         App updateApp = new App();
         updateApp.setId(appId);
         updateApp.setDeployKey(deployKey);
@@ -153,8 +174,37 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         boolean updateResult = this.updateById(updateApp);
         ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
 
-        //9.返回可以访问的URL
-        return String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        //10.返回可以访问的URL
+        String appDeployUrl = String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
+
+        //11.异步生成截图并且更新应用封面
+        generateAppScreenshotAsync(appId, appDeployUrl);
+
+        return appDeployUrl;
+    }
+
+
+    /**
+     * 异步生成应用截图并更新封面
+     *
+     * @param appId 应用ID
+     * @param appDeployUrl 应用访问URL
+     */
+    @Override
+    public void generateAppScreenshotAsync(Long appId, String appDeployUrl) {
+        //启用虚拟线程并执行
+        Thread.startVirtualThread(() -> {
+            // 调用截图封面生成截图并上传
+            String screenshotUrl = screenshotService.generateAndUploadScreenshot(appDeployUrl);
+            // 更新数据库的封面
+            App updateApp = new App();
+            updateApp.setId(appId);
+            updateApp.setDeployKey(appDeployUrl);
+            updateApp.setCover(screenshotUrl);
+            boolean update = this.updateById(updateApp);
+            ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR, "更新应用封面失败");
+
+        });
     }
 
 

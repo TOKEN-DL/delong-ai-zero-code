@@ -6,6 +6,7 @@ import router from './router'
 
 import Antd from 'ant-design-vue';
 import 'ant-design-vue/dist/reset.css';
+import 'highlight.js/styles/atom-one-dark.css';
 import '@/access.ts'
 
 const app = createApp(App)

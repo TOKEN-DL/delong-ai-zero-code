@@ -92,7 +92,9 @@ public class AiCodeGeneratorFacade {
 
         return switch (codeGenTypeEnum){
             case HTML -> {
+                // AI服务返回的数据
                 Flux<String> codeStream = aiCodeGeneratorService.generateHTMLCodeStream(userMessage);
+                // 后端拿到数据后进行处理返回给前端
                 yield processCodeStream(codeStream, CodeGenTypeEnum.HTML, appId);
 
             }
@@ -111,8 +113,15 @@ public class AiCodeGeneratorFacade {
         };
     }
 
+    /**
+     *  转接TokenStream到Flux
+     *
+     * @param tokenStream
+     * @return
+     */
     private Flux<String> processTokenStream(TokenStream tokenStream) {
         return Flux.create(sink -> {
+            //监听各类信息。在获取到对应的信息时，做出对应的操作。信息类型有，AI返回的信息，工具请求信息，工具完成信息
             tokenStream.onPartialResponse((String partialResponse) -> {
                 AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
                 sink.next(JSONUtil.toJsonStr(aiResponseMessage));
@@ -237,6 +246,7 @@ public class AiCodeGeneratorFacade {
             //实时搜集代码数据片段
             codeBuilder.append(chunk);
         }).doOnComplete(() -> {
+            // 收集完整的返回数据后，进行解析出代码，然后再本地进行保存
             try {
                 //流式返回完成后，保存代码
                 String completeCode = codeBuilder.toString();

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx -y ctx7 setup --claude)",
+      "Bash(npx -y ctx7 setup --claude --mode mcp)",
+      "Bash(npx -y ctx7 login --help)",
+      "Bash(npx -y ctx7 login --no-browser)",
+      "Read(//c/Users/墨小黑/**)"
+    ]
+  }
+}

@@ -43,6 +43,7 @@
 
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { fileURLToPath } from 'url'
 
 export default defineConfig({
   base: './',
@@ -98,7 +99,6 @@ const router = createRouter({
 2）需要在开头输出简单的网站生成计划
 3）需要在结尾输出简单的生成完毕提示（但是不要展开介绍项目）
 4）注意，禁止输出以下任何内容：
-
 - 安装运行步骤
 - 技术栈说明
 - 项目特点描述
@@ -106,6 +106,7 @@ const router = createRouter({
 - 提示词相关内容
 
 5）输出的总 token 数必须小于 20000，文件总数量必须小于 30 个
+
 
 ## 质量检验标准
 

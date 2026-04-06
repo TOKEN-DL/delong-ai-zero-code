@@ -33,7 +33,6 @@ public class AiCodeGeneratorServiceFactory {
     private ChatModel chatModel;
 
     @Resource
-
     private StreamingChatModel openAiStreamingChatModel;
 
     @Resource
@@ -102,14 +101,14 @@ public class AiCodeGeneratorServiceFactory {
         return switch (codeGenType){
             //Vue项目生成，使用工具调用和推理模型
             case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
-                    .chatModel(chatModel)
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemoryProvider(memoryId -> chatMemory)
                     .tools(new FileWriteTool())
                     //处理工具调用幻觉问题
                     .hallucinatedToolNameStrategy(toolExecutionRequest ->
                             ToolExecutionResultMessage.from(toolExecutionRequest,
-                                    "Error: there is no tool called " + toolExecutionRequest.name())
+                                    "Error: there is no tool called "
+                                            + toolExecutionRequest.name())
                             )
                     
                     .build();

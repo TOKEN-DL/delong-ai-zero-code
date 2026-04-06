@@ -5,9 +5,12 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.token.delongaizerocode.ai.model.message.*;
+import com.token.delongaizerocode.constant.AppConstant;
+import com.token.delongaizerocode.core.builder.VueProjectBuilder;
 import com.token.delongaizerocode.model.entity.User;
 import com.token.delongaizerocode.model.enums.ChatHistoryMessageTypeEnum;
 import com.token.delongaizerocode.service.ChatHistoryService;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -22,6 +25,9 @@ import java.util.Set;
 @Slf4j
 @Component
 public class JsonMessageStreamHandler {
+
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
 
     /**
      * 处理 TokenStream（VUE_PROJECT）
@@ -50,6 +56,8 @@ public class JsonMessageStreamHandler {
                     // 流式响应完成后，添加 AI 消息到对话历史
                     String aiResponse = chatHistoryStringBuilder.toString();
                     chatHistoryService.addChatHistory(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+                    String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
+                    vueProjectBuilder.buildProjectAsync(projectPath);
                 })
                 .doOnError(error -> {
                     // 如果AI回复失败，也要记录错误消息
@@ -63,15 +71,19 @@ public class JsonMessageStreamHandler {
      */
     private String handleJsonMessageChunk(String chunk, StringBuilder chatHistoryStringBuilder, Set<String> seenToolIds) {
         // 解析 JSON
+        //把监听到的切分数据进行转化为对象
         StreamMessage streamMessage = JSONUtil.toBean(chunk, StreamMessage.class);
+        //识别消息类型
         StreamMessageTypeEnum typeEnum = StreamMessageTypeEnum.getEnumByValue(streamMessage.getType());
         switch (typeEnum) {
             case AI_RESPONSE -> {
+                //把json字符串重新转换为对象
                 AiResponseMessage aiMessage = JSONUtil.toBean(chunk, AiResponseMessage.class);
                 String data = aiMessage.getData();
                 // 直接拼接响应
                 chatHistoryStringBuilder.append(data);
-                return data;
+                //转成前端的数据
+                return data;  // 返回给前端
             }
             case TOOL_REQUEST -> {
                 ToolRequestMessage toolRequestMessage = JSONUtil.toBean(chunk, ToolRequestMessage.class);
@@ -80,7 +92,7 @@ public class JsonMessageStreamHandler {
                 if (toolId != null && !seenToolIds.contains(toolId)) {
                     // 第一次调用这个工具，记录 ID 并完整返回工具信息
                     seenToolIds.add(toolId);
-                    return "\n\n[选择工具] 写入文件\n\n";
+                    return "\n\n[选择工具] 写入文件\n\n";   //返回给前端
                 } else {
                     // 不是第一次调用这个工具，直接返回空
                     return "";
@@ -93,15 +105,15 @@ public class JsonMessageStreamHandler {
                 String suffix = FileUtil.getSuffix(relativeFilePath);
                 String content = jsonObject.getStr("content");
                 String result = String.format("""
-                        [工具调用] 写入文件 %s
+                        [工具调用！！！] 写入文件 %s
                         ```%s
                         %s
                         ```
                         """, relativeFilePath, suffix, content);
                 // 输出前端和要持久化的内容
                 String output = String.format("\n\n%s\n\n", result);
-                chatHistoryStringBuilder.append(output);
-                return output;
+                chatHistoryStringBuilder.append(output);    //插入后端
+                return output;     // 返回给前端
             }
             default -> {
                 log.error("不支持的消息类型: {}", typeEnum);
