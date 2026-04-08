@@ -1,6 +1,8 @@
 package com.token.delongaizerocode.ai.tools;
 
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.json.JSONObject;
 import com.token.delongaizerocode.constant.AppConstant;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
@@ -21,8 +23,7 @@ import java.nio.file.StandardOpenOption;
  */
 @Slf4j
 @Component
-
-public class FileWriteTool {
+public class FileWriteTool extends BaseTool{
 
 
     @Tool("写入文件到指定路径")
@@ -60,4 +61,26 @@ public class FileWriteTool {
         }
     }
 
+    @Override
+    public String getToolName() {
+        return "writeFile";
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "写入文件";
+    }
+
+    @Override
+    public String generateToolExecutedResult(JSONObject arguments) {
+        String relativeFilePath = arguments.getStr("relativeFilePath");
+        String suffix = FileUtil.getSuffix(relativeFilePath);
+        String content = arguments.getStr("content");
+        return String.format("""
+                        [工具调用！！！] 写入文件 %s %s
+                        ```%s
+                        %s
+                        ```
+                        """, getDisplayName(),relativeFilePath, suffix, content);
+    }
 }

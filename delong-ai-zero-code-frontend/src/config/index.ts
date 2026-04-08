@@ -10,8 +10,8 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 // 应用部署域名
 export const DEPLOY_DOMAIN = import.meta.env.VITE_DEPLOY_DOMAIN || 'http://localhost'
 
-// 应用预览域名
-export const PREVIEW_DOMAIN = import.meta.env.VITE_PREVIEW_DOMAIN || 'http://localhost:8124/api'
+// 应用预览域名 - 使用相对路径确保同源
+export const PREVIEW_DOMAIN = '/api'
 
 /**
  * 获取部署后的应用访问地址

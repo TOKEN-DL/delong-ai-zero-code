@@ -2,7 +2,6 @@ package com.token.delongaizerocode.controller;
 
 import cn.hutool.json.JSONUtil;
 import com.mybatisflex.core.paginate.Page;
-import com.token.delongaizerocode.ai.AiCodeGenTypeRoutingService;
 import com.token.delongaizerocode.annotation.AuthnCheck;
 import com.token.delongaizerocode.common.BaseResponse;
 import com.token.delongaizerocode.common.DeleteRequest;
@@ -15,7 +14,6 @@ import com.token.delongaizerocode.exception.ThrowUtils;
 import com.token.delongaizerocode.model.dto.app.*;
 import com.token.delongaizerocode.model.entity.App;
 import com.token.delongaizerocode.model.entity.User;
-import com.token.delongaizerocode.model.enums.CodeGenTypeEnum;
 import com.token.delongaizerocode.model.vo.AppVO;
 import com.token.delongaizerocode.service.AppService;
 import com.token.delongaizerocode.service.ProjectDownloadService;
@@ -24,7 +22,6 @@ import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.BeanUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
@@ -32,10 +29,8 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.awt.*;
 import java.io.File;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 

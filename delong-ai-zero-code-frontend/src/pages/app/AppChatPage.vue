@@ -7,9 +7,14 @@ import { listAppChatHistory } from '@/api/chatHistoryController'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { getSSEUrl, getAppPreviewUrl } from '@/config'
 import { getCodeGenTypeLabel } from '@/constants/app'
-import { SendOutlined, RocketOutlined, AppstoreOutlined, ArrowLeftOutlined, InfoCircleOutlined, UserOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons-vue'
+import { SendOutlined, RocketOutlined, AppstoreOutlined, ArrowLeftOutlined, InfoCircleOutlined, UserOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, HighlightOutlined, CloseOutlined, ExportOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
+import {
+  visualEditor,
+  type SelectedElement,
+  generateElementPrompt
+} from '@/utils/visualEditor'
 
 // 代码语言别名映射
 const langAliases: Record<string, string> = {
@@ -158,6 +163,83 @@ const messagesContainer = ref<HTMLElement | null>(null)
 
 // 预览 iframe 引用
 const previewIframe = ref<HTMLIFrameElement | null>(null)
+
+// 可视化编辑相关状态
+const isEditMode = ref(false)
+const selectedElements = ref<SelectedElement[]>([])
+
+// 处理 iframe 加载完成
+const handleIframeLoad = () => {
+  const iframe = previewIframe.value
+
+  if (iframe) {
+    // 设置元素选中回调
+    visualEditor.setOnElementSelected((elements: SelectedElement[]) => {
+      selectedElements.value = [...elements]
+    })
+    // 设置 iframe 引用
+    visualEditor.setIframe(iframe)
+  }
+}
+
+// 切换编辑模式
+const toggleEditMode = () => {
+  isEditMode.value = visualEditor.toggleEditMode()
+}
+
+// 刷新预览
+const refreshPreview = () => {
+  previewKey.value = Date.now()
+  message.success('预览已刷新')
+}
+
+// 自动刷新预览（代码生成完成后调用）
+const autoRefreshPreview = () => {
+  console.log('开始自动刷新预览...')
+
+  // 第一次尝试：1.5秒后刷新
+  setTimeout(() => {
+    previewKey.value = Date.now()
+    console.log('预览区域第一次刷新 (key changed)')
+
+    // 第二次尝试：3秒后再次刷新，确保后端文件完全写入
+    setTimeout(() => {
+      previewKey.value = Date.now()
+      console.log('预览区域第二次刷新 (key changed)')
+
+      // 尝试直接刷新 iframe 内容
+      nextTick(() => {
+        if (previewIframe.value?.contentWindow) {
+          try {
+            previewIframe.value.contentWindow.location.reload()
+            console.log('预览 iframe 已通过 reload 刷新')
+          } catch (e) {
+            console.log('预览区域已通过 key 刷新')
+          }
+        }
+      })
+    }, 1500)
+  }, 1500)
+}
+
+// 在新窗口打开
+const openInNewTab = () => {
+  if (appInfo.value && showPreview.value) {
+    const url = getAppPreviewUrl(appInfo.value.codeGenType || '', appInfo.value.id || '')
+    window.open(url, '_blank')
+  }
+}
+
+// 移除选中的元素
+const removeSelectedElement = (xpath: string) => {
+  visualEditor.removeSelectedElement(xpath)
+}
+
+// 清除所有选中的元素
+const clearSelectedElements = () => {
+  visualEditor.clearSelectedElements()
+  selectedElements.value = []
+}
 
 // SSE 连接控制器
 let abortController: AbortController | null = null
@@ -436,23 +518,8 @@ const startCodeGen = async (prompt: string) => {
     codeGenerated.value = true
     console.log('生成完成, 最终内容长度:', fullContent.length)
 
-    // 延迟刷新预览区域，等待后端文件写入完成和 DOM 更新
-    nextTick(() => {
-      setTimeout(() => {
-        previewKey.value = Date.now()
-        // 尝试直接刷新 iframe
-        nextTick(() => {
-          if (previewIframe.value?.contentWindow) {
-            try {
-              previewIframe.value.contentWindow.location.reload()
-              console.log('预览 iframe 已通过 reload 刷新')
-            } catch (e) {
-              console.log('预览区域已通过 key 刷新')
-            }
-          }
-        })
-      }, 1000)
-    })
+    // 自动刷新预览区域，等待后端文件写入完成
+    autoRefreshPreview()
 
     const msg = messages.value[aiMessageIndex]
     if (msg) {
@@ -484,15 +551,33 @@ const sendMessage = async () => {
     return
   }
 
-  const prompt = currentInput.value.trim()
+  let prompt = currentInput.value.trim()
   currentInput.value = ''
 
-  // 添加用户消息
+  // 合并获取选中的元素：优先使用 Vue 响应式数据，备选从 visualEditor 直接获取
+  const elements = selectedElements.value.length > 0
+    ? selectedElements.value
+    : visualEditor.getSelectedElements()
+
+  // 如果有选中的元素，将元素信息添加到提示词中
+  if (elements.length > 0) {
+    const elementPrompt = generateElementPrompt(elements)
+    prompt = prompt + elementPrompt
+  }
+
+  // 添加用户消息（显示原始提示词，不包含元素信息）
   messages.value.push({
     role: 'user',
-    content: prompt,
+    content: prompt.split('\n--- 用户选中的页面元素 ---')[0] || prompt,
     timestamp: new Date(),
   })
+
+  // 清除选中元素并退出编辑模式
+  if (isEditMode.value) {
+    clearSelectedElements()
+    isEditMode.value = false
+    visualEditor.exitEditMode()
+  }
 
   // 滚动到底部
   scrollToBottom()
@@ -721,6 +806,8 @@ onUnmounted(() => {
   if ((window as any).copyCode) {
     delete (window as any).copyCode
   }
+  // 销毁可视化编辑器
+  visualEditor.destroy()
 })
 
 // 页面加载时获取应用信息
@@ -880,37 +967,116 @@ onMounted(async () => {
           </div>
         </div>
         <div class="input-area">
-          <a-tooltip :title="!isOwner ? '无法在别人的作品下对话哦~' : ''" placement="top">
-            <a-textarea
-              v-model:value="currentInput"
-              :placeholder="!isOwner ? '无法在别人的作品下对话哦~' : '请描述你想生成的网站，越详细效果越好哦'"
-              :auto-size="{ minRows: 2, maxRows: 4 }"
-              :disabled="sending || isInputDisabled"
-              @pressEnter="handlePressEnter"
-              class="message-input"
-            />
-          </a-tooltip>
-          <a-button
-            type="primary"
-            size="large"
-            :disabled="!currentInput.trim() || sending || isInputDisabled"
-            @click="sendMessage"
-            class="send-btn"
-          >
-            <template #icon>
-              <SendOutlined />
-            </template>
-            发送
-          </a-button>
+          <!-- 选中的元素信息展示 -->
+          <div v-if="selectedElements.length > 0" class="selected-elements-info">
+            <a-alert type="info" class="selected-elements-alert">
+              <template #message>
+                <div class="selected-elements-header">
+                  <span>已选中 {{ selectedElements.length }} 个元素</span>
+                  <a-button type="link" size="small" @click="clearSelectedElements">
+                    <template #icon><CloseOutlined /></template>
+                    清除全部
+                  </a-button>
+                </div>
+              </template>
+              <template #description>
+                <div class="selected-elements-list">
+                  <div v-for="(element, index) in selectedElements" :key="element.xpath" class="selected-element-item">
+                    <div class="element-info">
+                      <span class="element-tag">{{ element.tagName }}</span>
+                      <span v-if="element.id" class="element-id">#{{ element.id }}</span>
+                      <span v-if="element.className" class="element-class">.{{ element.className.split(' ')[0] }}</span>
+                      <span v-if="element.text" class="element-text">"{{ element.text.slice(0, 30) }}{{ element.text.length > 30 ? '...' : '' }}"</span>
+                    </div>
+                    <a-button type="text" size="small" class="remove-element-btn" @click="removeSelectedElement(element.xpath)">
+                      <template #icon><CloseOutlined /></template>
+                    </a-button>
+                  </div>
+                </div>
+              </template>
+            </a-alert>
+          </div>
+
+          <!-- 编辑模式提示 -->
+          <div v-if="isEditMode" class="edit-mode-tip">
+            <a-alert type="warning" message="编辑模式已开启" description="在右侧预览区域点击元素即可选中，选中后发送消息时会自动附加元素信息。" closable />
+          </div>
+
+          <div class="input-row">
+            <a-tooltip :title="!isOwner ? '无法在别人的作品下对话哦~' : ''" placement="top">
+              <a-textarea
+                v-model:value="currentInput"
+                :placeholder="!isOwner ? '无法在别人的作品下对话哦~' : (isEditMode ? '描述你想对选中元素进行的修改...' : '请描述你想生成的网站，越详细效果越好哦')"
+                :auto-size="{ minRows: 2, maxRows: 4 }"
+                :disabled="sending || isInputDisabled"
+                @pressEnter="handlePressEnter"
+                class="message-input"
+              />
+            </a-tooltip>
+            <a-button
+              type="primary"
+              size="large"
+              :disabled="!currentInput.trim() || sending || isInputDisabled"
+              @click="sendMessage"
+              class="send-btn"
+            >
+              <template #icon>
+                <SendOutlined />
+              </template>
+              发送
+            </a-button>
+          </div>
         </div>
       </div>
 
       <!-- 右侧网页展示区域 -->
       <div class="preview-section">
         <div class="preview-header">
-          <h2>应用预览</h2>
-          <a-tag v-if="showPreview" color="success">已生成</a-tag>
-          <a-tag v-else color="processing">生成中...</a-tag>
+          <div class="preview-header-left">
+            <h2>应用预览</h2>
+            <a-tag v-if="showPreview" color="success">已生成</a-tag>
+            <a-tag v-else color="processing">生成中...</a-tag>
+          </div>
+          <div class="preview-header-right">
+            <!-- 选择元素按钮 -->
+            <a-tooltip :title="!showPreview ? '请先生成代码' : (isEditMode ? '退出编辑模式' : '点击选择要修改的页面元素')" placement="bottom">
+              <a-button
+                :type="isEditMode ? 'primary' : 'default'"
+                size="small"
+                :disabled="!showPreview || isInputDisabled"
+                @click="toggleEditMode"
+              >
+                <template #icon>
+                  <HighlightOutlined />
+                </template>
+                {{ isEditMode ? '退出编辑' : '选择元素' }}
+              </a-button>
+            </a-tooltip>
+            <!-- 刷新预览按钮 -->
+            <a-tooltip title="刷新预览" placement="bottom">
+              <a-button
+                size="small"
+                :disabled="!showPreview"
+                @click="refreshPreview"
+              >
+                <template #icon>
+                  <ReloadOutlined />
+                </template>
+              </a-button>
+            </a-tooltip>
+            <!-- 新窗口打开按钮 -->
+            <a-tooltip title="在新窗口中打开" placement="bottom">
+              <a-button
+                size="small"
+                :disabled="!showPreview"
+                @click="openInNewTab"
+              >
+                <template #icon>
+                  <ExportOutlined />
+                </template>
+              </a-button>
+            </a-tooltip>
+          </div>
         </div>
         <div class="preview-container">
           <div v-if="showPreview && appInfo" class="preview-iframe-wrapper">
@@ -920,6 +1086,7 @@ onMounted(async () => {
               :key="previewKey"
               class="preview-iframe"
               frameborder="0"
+              @load="handleIframeLoad"
             />
           </div>
           <div v-else class="preview-placeholder">
@@ -1200,8 +1367,107 @@ onMounted(async () => {
   background: #ffffff;
   border-top: 1px solid #e0f2fe;
   display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.input-row {
+  display: flex;
   gap: 12px;
   align-items: flex-end;
+}
+
+.edit-mode-btn {
+  flex-shrink: 0;
+  height: auto;
+  min-height: 40px;
+}
+
+.edit-mode-btn:disabled {
+  opacity: 0.5;
+}
+
+.selected-elements-info {
+  margin-bottom: 8px;
+}
+
+.selected-elements-alert {
+  border-radius: 8px;
+}
+
+.selected-elements-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.selected-elements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.selected-element-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f0f9ff;
+  border-radius: 6px;
+  border: 1px solid #bae6fd;
+}
+
+.element-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.element-tag {
+  background: #0ea5e9;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.element-id {
+  color: #f59e0b;
+  font-size: 12px;
+}
+
+.element-class {
+  color: #8b5cf6;
+  font-size: 12px;
+}
+
+.element-text {
+  color: #64748b;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove-element-btn {
+  flex-shrink: 0;
+  color: #94a3b8;
+}
+
+.remove-element-btn:hover {
+  color: #ef4444;
+}
+
+.edit-mode-tip {
+  margin-bottom: 8px;
+}
+
+.edit-mode-tip :deep(.ant-alert) {
+  border-radius: 8px;
 }
 
 .message-input {
@@ -1254,7 +1520,7 @@ onMounted(async () => {
 }
 
 .preview-header {
-  padding: 16px 20px;
+  padding: 12px 16px;
   border-bottom: 1px solid #e0f2fe;
   display: flex;
   justify-content: space-between;
@@ -1262,11 +1528,23 @@ onMounted(async () => {
   background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%);
 }
 
-.preview-header h2 {
+.preview-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.preview-header-left h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #0c4a6e;
+}
+
+.preview-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .preview-iframe-wrapper {

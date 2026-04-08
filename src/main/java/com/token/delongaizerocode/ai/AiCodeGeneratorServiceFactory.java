@@ -2,7 +2,7 @@ package com.token.delongaizerocode.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.token.delongaizerocode.ai.tools.FileWriteTool;
+import com.token.delongaizerocode.ai.tools.*;
 import com.token.delongaizerocode.exception.BusinessException;
 import com.token.delongaizerocode.exception.ErrorCode;
 import com.token.delongaizerocode.model.enums.CodeGenTypeEnum;
@@ -43,6 +43,9 @@ public class AiCodeGeneratorServiceFactory {
 
     @Resource
     private StreamingChatModel reasoningStreamingChatModel;
+
+    @Resource
+    private ToolManager toolManager;
 
 
     /**
@@ -103,7 +106,7 @@ public class AiCodeGeneratorServiceFactory {
             case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(new FileWriteTool())
+                    .tools(toolManager.getAllTools())
                     //处理工具调用幻觉问题
                     .hallucinatedToolNameStrategy(toolExecutionRequest ->
                             ToolExecutionResultMessage.from(toolExecutionRequest,
