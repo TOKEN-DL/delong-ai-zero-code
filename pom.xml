@@ -63,6 +63,20 @@
             <version>1.1.0-beta7</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>dashscope-sdk-java</artifactId>
+            <version>2.21.1</version>
+            <!-- 排除冲突的 slf4j-simple 日志包 -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+
 
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
@@ -85,6 +99,13 @@
         <dependency>
             <groupId>org.springframework.session</groupId>
             <artifactId>spring-session-data-redis</artifactId>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.bsc.langgraph4j</groupId>
+            <artifactId>langgraph4j-core</artifactId>
+            <version>1.8-SNAPSHOT</version> <!-- Or the current snapshot version -->
         </dependency>
 
         <!-- Selenium 网页截图依赖 -->
@@ -148,6 +169,16 @@
 
 
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>sonatype-oss-snapshots</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
     <build>
         <plugins>
