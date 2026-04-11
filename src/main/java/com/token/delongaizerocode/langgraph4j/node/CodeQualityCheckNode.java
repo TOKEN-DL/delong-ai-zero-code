@@ -2,7 +2,7 @@ package com.token.delongaizerocode.langgraph4j.node;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
-import com.token.delongaizerocode.ai.CodeQualityCheckService;
+import com.token.delongaizerocode.langgraph4j.ai.CodeQualityCheckService;
 import com.token.delongaizerocode.langgraph4j.model.QualityResult;
 import com.token.delongaizerocode.langgraph4j.state.WorkflowContext;
 import com.token.delongaizerocode.utils.SpringContextUtil;

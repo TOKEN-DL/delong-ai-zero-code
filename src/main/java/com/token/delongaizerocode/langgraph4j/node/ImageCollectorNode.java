@@ -1,6 +1,6 @@
 package com.token.delongaizerocode.langgraph4j.node;
 
-import com.token.delongaizerocode.ai.ImageCollectionPlanService;
+import com.token.delongaizerocode.langgraph4j.ai.ImageCollectionPlanService;
 import com.token.delongaizerocode.langgraph4j.model.ImageCollectionPlan;
 import com.token.delongaizerocode.langgraph4j.model.ImageResource;
 import com.token.delongaizerocode.langgraph4j.state.WorkflowContext;

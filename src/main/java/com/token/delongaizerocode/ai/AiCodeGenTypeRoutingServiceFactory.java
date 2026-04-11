@@ -7,6 +7,7 @@ import com.token.delongaizerocode.exception.BusinessException;
 import com.token.delongaizerocode.exception.ErrorCode;
 import com.token.delongaizerocode.model.enums.CodeGenTypeEnum;
 import com.token.delongaizerocode.service.ChatHistoryService;
+import com.token.delongaizerocode.utils.SpringContextUtil;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -27,19 +28,26 @@ import java.time.Duration;
 @Slf4j
 public class AiCodeGenTypeRoutingServiceFactory {
 
-    @Resource
-    private ChatModel chatModel;
-
     /**
      * 创建AI代码生成类型路由服务实例
      *
      * @return
      */
-    @Bean
-   public AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService(){
-       return AiServices.builder(AiCodeGenTypeRoutingService.class)
+
+   public AiCodeGenTypeRoutingService createAiCodeGenTypeRoutingService(){
+        ChatModel chatModel = SpringContextUtil.getBean("routingChatModelPrototype", ChatModel.class);
+        return AiServices.builder(AiCodeGenTypeRoutingService.class)
                .chatModel(chatModel)
                .build();
+   }
+
+    /**
+     * 默认提供一个Bean
+     * @return
+     */
+   @Bean
+   public AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService(){
+       return createAiCodeGenTypeRoutingService();
    }
 
 

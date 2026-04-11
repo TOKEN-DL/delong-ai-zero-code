@@ -1,4 +1,4 @@
-package com.token.delongaizerocode.ai;
+package com.token.delongaizerocode.langgraph4j.ai;
 
 import com.token.delongaizerocode.langgraph4j.model.QualityResult;
 import dev.langchain4j.service.SystemMessage;

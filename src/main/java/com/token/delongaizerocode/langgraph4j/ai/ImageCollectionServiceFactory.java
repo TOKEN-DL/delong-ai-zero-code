@@ -1,4 +1,4 @@
-package com.token.delongaizerocode.ai;
+package com.token.delongaizerocode.langgraph4j.ai;
 
 import com.token.delongaizerocode.langgraph4j.tools.ImageSearchTool;
 import com.token.delongaizerocode.langgraph4j.tools.LogoGeneratorTool;
@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ImageCollectionServiceFactory {
 
-    @Resource
+    @Resource(name = "openAiChatModel")
     private ChatModel chatModel;
 
     @Resource

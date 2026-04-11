@@ -7,6 +7,7 @@ import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.token.delongaizerocode.ai.AiCodeGenTypeRoutingService;
+import com.token.delongaizerocode.ai.AiCodeGenTypeRoutingServiceFactory;
 import com.token.delongaizerocode.constant.AppConstant;
 import com.token.delongaizerocode.core.AiCodeGeneratorFacade;
 import com.token.delongaizerocode.core.builder.VueProjectBuilder;
@@ -71,7 +72,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private ScreenshotService screenshotService;
 
     @Resource
-    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
+    private AiCodeGenTypeRoutingServiceFactory aiCodeGenTypeRoutingServiceFactory;
 
 
 
@@ -135,6 +136,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
 
         //暂时设置位多文件生成
         //占时设置成为VUE工程生成
+        //使用AI智能选择代码类型，多例模式
+        AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService = aiCodeGenTypeRoutingServiceFactory.createAiCodeGenTypeRoutingService();
         CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt); //
         app.setCodeGenType(selectedCodeGenType.getValue());
         //插入数据库

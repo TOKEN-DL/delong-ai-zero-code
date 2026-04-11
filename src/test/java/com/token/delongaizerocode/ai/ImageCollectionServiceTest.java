@@ -1,5 +1,6 @@
 package com.token.delongaizerocode.ai;
 
+import com.token.delongaizerocode.langgraph4j.ai.ImageCollectionService;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
