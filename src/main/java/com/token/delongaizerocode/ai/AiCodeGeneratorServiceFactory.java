@@ -2,6 +2,8 @@ package com.token.delongaizerocode.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.token.delongaizerocode.ai.guardrail.PromptSafetyInputGuardrail;
+import com.token.delongaizerocode.ai.guardrail.RetryOutputGuardrail;
 import com.token.delongaizerocode.ai.tools.*;
 import com.token.delongaizerocode.exception.BusinessException;
 import com.token.delongaizerocode.exception.ErrorCode;
@@ -103,27 +105,32 @@ public class AiCodeGeneratorServiceFactory {
                 StreamingChatModel reasoningStreamingChatModel = SpringContextUtil.getBean("reasoningStreamingChatModelPrototype", StreamingChatModel.class);
                 yield AiServices.builder(AiCodeGeneratorService.class)
                         .chatModel(chatModel)
-                    .streamingChatModel(reasoningStreamingChatModel)
-                    .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(toolManager.getAllTools())
-                    //处理工具调用幻觉问题
-                    .hallucinatedToolNameStrategy(toolExecutionRequest ->
-                            ToolExecutionResultMessage.from(toolExecutionRequest,
-                                    "Error: there is no tool called "
-                                            + toolExecutionRequest.name())
-                            )
-                    
-                    .build();
+                        .streamingChatModel(reasoningStreamingChatModel)
+                        .chatMemoryProvider(memoryId -> chatMemory)
+                        .tools(toolManager.getAllTools())
+                        .maxSequentialToolsInvocations(20)
+                        .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
+                       // .outputGuardrails(new RetryOutputGuardrail())  // 添加输出护轨
+                        //处理工具调用幻觉问题
+                        .hallucinatedToolNameStrategy(toolExecutionRequest ->
+                                ToolExecutionResultMessage.from(toolExecutionRequest,
+                                        "Error: there is no tool called "
+                                                + toolExecutionRequest.name())
+                                )
+
+                        .build();
             }
 
             case HTML, MULTI_FILE -> {
                 //使用多例模式的StreamingChatModel解决并发问题
                 StreamingChatModel openAiStreamingChatModel = SpringContextUtil.getBean("streamingChatModelPrototype", StreamingChatModel.class);
                 yield  AiServices.builder(AiCodeGeneratorService.class)
-                    .chatModel(chatModel)
-                    .streamingChatModel(openAiStreamingChatModel)
-                    .chatMemory(chatMemory)
-                    .build();
+                        .chatModel(chatModel)
+                        .streamingChatModel(openAiStreamingChatModel)
+                        .chatMemory(chatMemory)
+                        .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
+                       // .outputGuardrails(new RetryOutputGuardrail())  // 添加输出护轨
+                        .build();
             }
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,"不支持的代码生成模型");
         };
