@@ -435,72 +435,50 @@ const startCodeGen = async (prompt: string) => {
       console.log('收到数据块:', chunk)
 
       // 解析 SSE 数据
-      // 格式: data:{"d":"内容"}\n 或 data:{"d":"内容"}data:{"d":"内容"}
-      // 查找所有 data: 后面的 JSON 对象
-      let searchPos = 0
-      while (true) {
-        const dataIdx = chunk.indexOf('data:', searchPos)
-        if (dataIdx === -1) break
-
-        const jsonStart = dataIdx + 5 // 'data:'.length
-        const jsonStartChar = chunk[jsonStart]
-
-        if (jsonStartChar !== '{') {
-          searchPos = jsonStart
+      // 格式: event:xxx\ndata:{"d":"内容"}\n\n 或 data:{"d":"内容"}\n
+      // 支持 event: business-error 等自定义事件
+      const lines = chunk.split('\n')
+      let currentEvent = ''
+      for (const line of lines) {
+        if (line.startsWith('event:')) {
+          currentEvent = line.substring(6).trim()
+          continue
+        }
+        if (!line.startsWith('data:')) {
+          currentEvent = ''
           continue
         }
 
-        // 找到匹配的 }
-        let braceCount = 0
-        let inString = false
-        let escape = false
-        let jsonEnd = -1
-
-        for (let i = jsonStart; i < chunk.length; i++) {
-          const c = chunk[i]
-
-          if (escape) {
-            escape = false
-            continue
-          }
-
-          if (c === '\\' && inString) {
-            escape = true
-            continue
-          }
-
-          if (c === '"') {
-            inString = !inString
-            continue
-          }
-
-          if (!inString) {
-            if (c === '{') braceCount++
-            else if (c === '}') {
-              braceCount--
-              if (braceCount === 0) {
-                jsonEnd = i
-                break
-              }
-            }
-          }
+        const jsonStr = line.substring(5).trim()
+        if (!jsonStr.startsWith('{')) {
+          currentEvent = ''
+          continue
         }
 
-        if (jsonEnd !== -1) {
-          const jsonStr = chunk.substring(jsonStart, jsonEnd + 1)
-          try {
-            const json = JSON.parse(jsonStr)
-            if (json.d !== undefined) {
-              fullContent += json.d
-              console.log('SSE收到数据:', jsonStr)
-            }
-          } catch (e) {
-            console.log('JSON解析失败:', jsonStr)
+        try {
+          const json = JSON.parse(jsonStr)
+
+          // 处理 business-error 事件（后端限流等错误）
+          if (currentEvent === 'business-error') {
+            console.error('SSE业务错误事件:', json)
+            const errorMessage = json.message || '生成过程中出现错误'
+            const errMsg = messages.value[aiMessageIndex]
+            if (errMsg) errMsg.content = `❌ ${errorMessage}`
+            sending.value = false
+            message.error(errorMessage)
+            // 中止流读取
+            reader.cancel()
+            return
           }
-          searchPos = jsonEnd + 1
-        } else {
-          break
+
+          if (json.d !== undefined) {
+            fullContent += json.d
+            console.log('SSE收到数据:', jsonStr)
+          }
+        } catch (e) {
+          console.log('JSON解析失败:', jsonStr)
         }
+        currentEvent = ''
       }
 
       // 实时更新消息内容

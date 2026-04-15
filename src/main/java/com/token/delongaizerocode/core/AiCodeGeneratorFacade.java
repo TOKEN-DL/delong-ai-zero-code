@@ -8,6 +8,8 @@ import com.token.delongaizerocode.ai.model.MultiFileCodeResult;
 import com.token.delongaizerocode.ai.model.message.AiResponseMessage;
 import com.token.delongaizerocode.ai.model.message.ToolExecutedMessage;
 import com.token.delongaizerocode.ai.model.message.ToolRequestMessage;
+import com.token.delongaizerocode.constant.AppConstant;
+import com.token.delongaizerocode.core.builder.VueProjectBuilder;
 import com.token.delongaizerocode.core.parser.CodeParseExecutor;
 import com.token.delongaizerocode.core.saver.CodeFileSaverExecutor;
 import com.token.delongaizerocode.exception.BusinessException;
@@ -35,6 +37,9 @@ public class AiCodeGeneratorFacade {
 
 //    @Resource
 //    private AiCodeGeneratorService aiCodeGeneratorService;
+
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
 
     @Resource
     private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
@@ -104,7 +109,7 @@ public class AiCodeGeneratorFacade {
             }
             case VUE_PROJECT -> {
                 TokenStream tokenStream = aiCodeGeneratorService.generateVueProjectCodeStream(appId,userMessage);
-                yield processTokenStream(tokenStream);
+                yield processTokenStream(tokenStream, appId);
             }
             default -> {
                 String errorMsg = "不支持的生成类型" + codeGenTypeEnum.getValue();
@@ -116,10 +121,11 @@ public class AiCodeGeneratorFacade {
     /**
      *  转接TokenStream到Flux
      *
-     * @param tokenStream
-     * @return
+     * @param tokenStream TokenStream对象
+     * @param appId 应用ID
+     * @return  Flux<String> 流式响应
      */
-    private Flux<String> processTokenStream(TokenStream tokenStream) {
+    private Flux<String> processTokenStream(TokenStream tokenStream, Long appId) {
         return Flux.create(sink -> {
             //监听各类信息。在获取到对应的信息时，做出对应的操作。信息类型有，AI返回的信息，工具请求信息，工具完成信息
             tokenStream.onPartialResponse((String partialResponse) -> {
@@ -132,6 +138,9 @@ public class AiCodeGeneratorFacade {
                 ToolExecutedMessage toolExecutedMessage = new ToolExecutedMessage(toolExecution);
                 sink.next(JSONUtil.toJsonStr(toolExecutedMessage));
             }).onCompleteResponse((ChatResponse response) -> {
+                // 同步构造项目
+                String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
+                vueProjectBuilder.buildProject(projectPath);
                 sink.complete();
             }).onError((Throwable error) -> {
                 error.printStackTrace();

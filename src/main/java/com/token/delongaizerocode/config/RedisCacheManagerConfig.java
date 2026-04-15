@@ -33,10 +33,10 @@ public class RedisCacheManagerConfig {
                 .disableCachingNullValues() // 禁用 null 值缓存
                 // key 使用 String 序列化器
                 .serializeKeysWith(RedisSerializationContext.SerializationPair
-                        .fromSerializer(new StringRedisSerializer()))
-                // value 使用 JSON 序列化器（支持复杂对象）
-                .serializeValuesWith(RedisSerializationContext.SerializationPair
-                        .fromSerializer(new GenericJackson2JsonRedisSerializer(objectMapper)));
+                        .fromSerializer(new StringRedisSerializer()));
+                // value 使用 JSON 序列化器（支持复杂对象）开启后需要给序列化增加默认类型配置。否则无法反序列化
+//                .serializeValuesWith(RedisSerializationContext.SerializationPair
+//                        .fromSerializer(new GenericJackson2JsonRedisSerializer(objectMapper)));
         
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(defaultConfig)

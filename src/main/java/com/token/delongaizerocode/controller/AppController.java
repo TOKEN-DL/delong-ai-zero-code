@@ -15,6 +15,8 @@ import com.token.delongaizerocode.model.dto.app.*;
 import com.token.delongaizerocode.model.entity.App;
 import com.token.delongaizerocode.model.entity.User;
 import com.token.delongaizerocode.model.vo.AppVO;
+import com.token.delongaizerocode.ratelimter.annotation.RateLimit;
+import com.token.delongaizerocode.ratelimter.enums.RateLimitType;
 import com.token.delongaizerocode.service.AppService;
 import com.token.delongaizerocode.service.ProjectDownloadService;
 import com.token.delongaizerocode.service.UserService;
@@ -57,6 +59,7 @@ public class AppController {
 
 
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RateLimit(limitType = RateLimitType.USER, rate = 5, rateInterval = 60, message = "AI请求过于频繁，请稍后再试")
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
                                                      @RequestParam String message,
                                                         HttpServletRequest request) {
@@ -355,7 +358,7 @@ public class AppController {
      */
     @PostMapping("/list/featured")
     @Cacheable(value = "good_app_page",
-            key = "T(com.token.delongaizerocode.utils).generateKey(#appQueryRequest)",
+            key = "T(com.token.delongaizerocode.utils.CacheKeyUtils).generateKey(#appQueryRequest)",
             condition = "#appQueryRequest.pageNum <= 10"
     )
     public BaseResponse<Page<AppVO>> listFeaturedAppByPage(@RequestBody AppQueryRequest appQueryRequest) {
