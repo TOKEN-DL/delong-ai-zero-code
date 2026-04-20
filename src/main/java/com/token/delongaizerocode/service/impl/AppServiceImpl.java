@@ -24,6 +24,8 @@ import com.token.delongaizerocode.model.enums.ChatHistoryMessageTypeEnum;
 import com.token.delongaizerocode.model.enums.CodeGenTypeEnum;
 import com.token.delongaizerocode.model.vo.AppVO;
 import com.token.delongaizerocode.model.vo.UserVO;
+import com.token.delongaizerocode.monitor.MonitorContext;
+import com.token.delongaizerocode.monitor.MonitorContextHolder;
 import com.token.delongaizerocode.service.AppService;
 import com.token.delongaizerocode.service.ChatHistoryService;
 import com.token.delongaizerocode.service.ScreenshotService;
@@ -103,12 +105,21 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
 
         //5.在调用AI前，先保存用户消息到数据库中
         chatHistoryService.addChatHistory(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
-
-        //6.调用AI生成代码（流式）
+        //6.设置监控上下文
+        MonitorContextHolder.setContext(MonitorContext.builder()
+                .userId(loginUser.getId().toString())
+                .appId(appId.toString())
+                .build()
+        );
+        //7.调用AI生成代码（流式）
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
-        //7. 收集AI响应的内容
+        //8. 收集AI响应的内容
         //根据不同的工程类型处理不同的数据
-        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum);
+        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum)
+                .doFinally(signalType -> {
+                    //流结束时，清理数据
+                    MonitorContextHolder.clearContext();
+                });
 
 
         //5.调用AI生成代码

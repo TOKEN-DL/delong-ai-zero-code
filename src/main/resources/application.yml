@@ -37,6 +37,15 @@ knife4j:
   enable: true
   setting:
     language: zh_cn
+# 监控
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
 
 
 
