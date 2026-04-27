@@ -182,17 +182,18 @@ onMounted(() => {
 <style scoped>
 .app-edit-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-surface);
   padding: 24px;
 }
 
 .container {
   max-width: 800px;
   margin: 0 auto;
-  background: #fff;
-  border-radius: 8px;
+  background: var(--color-card-bg);
+  border-radius: 12px;
   padding: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
 }
 
 .header {
@@ -201,14 +202,14 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 32px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .header h2 {
   margin: 0;
   font-size: 24px;
   font-weight: 600;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .edit-form {
@@ -217,16 +218,7 @@ onMounted(() => {
 
 .edit-form :deep(.ant-form-item-label > label) {
   font-weight: 500;
-  color: #333;
-}
-
-:deep(.ant-btn-primary) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-}
-
-:deep(.ant-btn-primary:hover) {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  color: var(--color-text-primary);
 }
 
 @media (max-width: 768px) {

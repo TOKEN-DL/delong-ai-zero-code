@@ -431,116 +431,104 @@ onMounted(() => {
 <style scoped>
 .home-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 30%, #ffffff 100%);
+  background: var(--bg-primary);
   padding-bottom: 40px;
 }
 
-/* 顶部英雄区域 - 清凉海滩风格 */
+/* Hero section — Apple style: clean, lots of space */
 .hero-section {
   width: 100%;
   min-height: 50vh;
   padding: 80px 20px 60px;
   text-align: center;
-  background:
-    radial-gradient(ellipse at 30% 0%, rgba(14, 165, 233, 0.1) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 30%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
-    radial-gradient(ellipse at 50% 100%, rgba(56, 189, 248, 0.1) 0%, transparent 50%);
+  background: var(--hero-bg);
   position: relative;
 }
 
 .hero-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image:
-    linear-gradient(rgba(14, 165, 233, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(14, 165, 233, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
+  display: none;
 }
 
 .site-title {
   font-size: 48px;
   font-weight: 700;
-  background: linear-gradient(135deg, #0284c7 0%, #06b6d4 50%, #0ea5e9 100%);
-  background-size: 200% 200%;
+  background: var(--hero-title);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 16px;
-  animation: gradientShift 4s ease infinite;
-}
-
-@keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  letter-spacing: -0.02em;
 }
 
 .site-description {
   font-size: 18px;
-  color: #0369a1;
+  color: var(--color-text-muted);
   margin-bottom: 40px;
+  letter-spacing: -0.01em;
 }
 
-/* 输入区域 */
+/* Input area */
 .input-section {
   max-width: 700px;
   margin: 0 auto 30px;
   display: flex;
   gap: 12px;
-  align-items: flex-end;
+  align-items: center;
 }
 
 .prompt-input {
   flex: 1;
   border-radius: 12px;
-  background: #ffffff;
-  border: 1px solid #bae6fd;
-  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.08);
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-input-border);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: stretch;
 }
 
-.prompt-input :deep(textarea) {
+.prompt-input :deep(.ant-input) {
   font-size: 15px;
-  color: #0c4a6e;
+  color: var(--color-text-primary);
   background: transparent !important;
+  padding: 10px 12px;
+  line-height: 1.5;
 }
 
 .prompt-input :deep(textarea::placeholder) {
-  color: #7dd3fc;
+  color: var(--color-input-placeholder);
 }
 
 .prompt-input:focus,
 .prompt-input:hover {
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+  border-color: var(--color-input-focus-border);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 .create-btn {
   height: 48px;
   padding: 0 32px;
   font-size: 15px;
-  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+  font-weight: 500;
+  background: var(--color-primary);
   border: none;
   border-radius: 12px;
   flex-shrink: 0;
 }
 
 .create-btn:hover {
-  background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.35);
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px var(--color-primary-light);
 }
 
 .create-btn:disabled {
-  background: #e0f2fe;
+  background: var(--color-text-muted);
+  opacity: 0.3;
   transform: none;
   box-shadow: none;
 }
 
-/* 快捷提示词示例 */
+/* Quick prompt examples */
 .prompt-examples {
   max-width: 900px;
   margin: 0 auto;
@@ -550,38 +538,35 @@ onMounted(() => {
 }
 
 .prompt-example-card {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid #e0f2fe;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
   border-radius: 12px;
   padding: 16px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   text-align: left;
-  backdrop-filter: blur(4px);
 }
 
 .prompt-example-card:hover {
-  background: #ffffff;
-  border-color: #7dd3fc;
+  border-color: var(--color-primary);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.15);
+  box-shadow: var(--shadow-md);
 }
 
 .example-title {
   font-size: 14px;
   font-weight: 600;
-  color: #0369a1;
+  color: var(--color-text-primary);
   margin-bottom: 6px;
 }
 
 .example-desc {
   font-size: 12px;
-  color: #0ea5e9;
+  color: var(--color-text-muted);
   line-height: 1.4;
-  opacity: 0.8;
 }
 
-/* 通用区块样式 */
+/* Sections */
 .section {
   max-width: 1400px;
   margin: 0 auto;
@@ -598,61 +583,63 @@ onMounted(() => {
 .section-title {
   font-size: 24px;
   font-weight: 600;
-  color: #0c4a6e;
+  color: var(--color-text-primary);
   margin: 0;
   display: flex;
   align-items: center;
   gap: 12px;
+  letter-spacing: -0.01em;
 }
 
 .section-icon {
   font-size: 24px;
-  color: #0ea5e9;
+  color: var(--color-primary);
 }
 
 .section-icon.featured {
-  color: #f59e0b;
+  color: var(--color-featured);
 }
 
-/* 应用网格 */
+/* Apps grid */
 .apps-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
-/* 应用卡片 - 清凉白色主题 */
+/* App card — Apple style: minimal, clean */
 .app-card {
-  background: #ffffff;
-  border-radius: 12px;
+  background: var(--color-card-bg);
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(14, 165, 233, 0.08);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: all 0.3s ease;
-  border: 1px solid #e0f2fe;
+  transition: all 0.2s ease;
+  border: 1px solid var(--color-card-border);
 }
 
 .app-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(14, 165, 233, 0.18);
-  border-color: #7dd3fc;
+  box-shadow: var(--color-card-hover-shadow);
+  border-color: var(--color-card-hover-border);
 }
 
 .app-card.featured {
-  border-color: #fcd34d;
+  border-color: var(--color-featured);
 }
 
 .app-card.featured:hover {
-  border-color: #fbbf24;
+  border-color: var(--color-featured);
+  box-shadow: 0 8px 30px rgba(255, 159, 10, 0.15);
 }
 
-/* 应用封面 */
+/* App cover */
 .app-cover {
   width: 100%;
   height: 160px;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+  background: var(--bg-surface);
 }
 
 .app-cover img {
@@ -676,23 +663,23 @@ onMounted(() => {
 
 .app-cover-placeholder .cover-icon {
   font-size: 48px;
-  color: #7dd3fc;
+  color: var(--color-text-muted);
+  opacity: 0.3;
 }
 
 .featured-badge {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  background: var(--color-featured);
   color: #fff;
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
-  font-weight: 500;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+  font-weight: 600;
 }
 
-/* 卡片头部 - 左右结构 */
+/* Card header */
 .app-header {
   display: flex;
   align-items: center;
@@ -702,7 +689,7 @@ onMounted(() => {
 
 .app-avatar {
   flex-shrink: 0;
-  border: 2px solid #e0f2fe;
+  border: 2px solid var(--color-border-light);
 }
 
 .app-header-info {
@@ -713,7 +700,7 @@ onMounted(() => {
 .app-name {
   font-size: 15px;
   font-weight: 600;
-  color: #0c4a6e;
+  color: var(--color-text-primary);
   margin: 0 0 2px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -722,7 +709,7 @@ onMounted(() => {
 
 .app-author {
   font-size: 12px;
-  color: #0ea5e9;
+  color: var(--color-text-muted);
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -731,7 +718,7 @@ onMounted(() => {
 
 .app-actions {
   padding: 12px 16px;
-  border-top: 1px solid #f0f9ff;
+  border-top: 1px solid var(--color-border-light);
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -741,32 +728,31 @@ onMounted(() => {
   padding: 0 8px;
   height: auto;
   font-size: 13px;
-  color: #0ea5e9;
+  color: var(--color-primary);
 }
 
 .app-actions :deep(.ant-btn-link:hover) {
-  color: #0369a1;
+  color: var(--color-primary-hover);
 }
 
-/* 分页 */
+/* Pagination */
 .pagination-wrapper {
   display: flex;
   justify-content: center;
   margin-top: 24px;
 }
 
-/* 未登录提示 */
 .login-tip {
   text-align: center;
   padding: 40px;
-  color: #0369a1;
+  color: var(--color-text-muted);
 }
 
 .login-tip a {
-  color: #0ea5e9;
+  color: var(--color-primary);
 }
 
-/* 响应式设计 */
+/* Responsive */
 @media (max-width: 768px) {
   .hero-section {
     padding: 40px 16px 30px;

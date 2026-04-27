@@ -23,6 +23,6 @@ import GlobalFooter from '@/components/GlobalFooter.vue'
 .content {
   flex: 1;
   padding: 24px;
-  background: #f0f2f5;
+  background: var(--bg-surface);
 }
 </style>

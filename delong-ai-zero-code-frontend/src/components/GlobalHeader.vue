@@ -1,7 +1,5 @@
 <template>
   <a-layout-header class="header">
-
-
     <a-row :wrap="false">
       <a-col flex="200px">
         <RouterLink to="/">
@@ -22,9 +20,19 @@
         </a-menu>
       </a-col>
 
-
       <a-col>
         <div class="right-section">
+          <!-- Theme toggle -->
+          <a-tooltip :title="themeTooltip" placement="bottom">
+            <a-button type="text" class="theme-toggle-btn" @click="handleThemeToggle">
+              <template #icon>
+                <BulbFilled v-if="themeStore.mode === 'dark'" />
+                <BulbOutlined v-else-if="themeStore.mode === 'light'" />
+                <LaptopOutlined v-else />
+              </template>
+            </a-button>
+          </a-tooltip>
+
           <div v-if="loginUserStore.loginUser.id">
             <a-dropdown>
               <a-space>
@@ -37,23 +45,17 @@
                     <logout-outlined/>
                   </a-menu-item>
                 </a-menu>
-
               </template>
             </a-dropdown>
-
           </div>
           <div v-else>
             <a-button type="primary" href="/user/login">
               登录
             </a-button>
-
           </div>
-
-
         </div>
       </a-col>
     </a-row>
-
   </a-layout-header>
 </template>
 
@@ -62,11 +64,14 @@ import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {type MenuProps, message} from 'ant-design-vue'
 import {useLoginUserStore} from "@/stores/loginUser.ts";
-import {LogoutOutlined} from '@ant-design/icons-vue'
+import {LogoutOutlined, BulbOutlined, BulbFilled, LaptopOutlined} from '@ant-design/icons-vue'
 import {userLogout} from "@/api/userController.ts";
+import { useThemeStore } from '@/stores/themeStore'
+import type { ThemeMode } from '@/stores/themeStore'
 
 
 const loginUserStore = useLoginUserStore()
+const themeStore = useThemeStore()
 
 loginUserStore.fetchLoginUser()
 
@@ -76,7 +81,6 @@ const router = useRouter()
 const siteTitle = ref('零代码平台')
 
 const selectedKeys = ref<string[]>(['/'])
-//监听路由变化
 router.afterEach((to, from, next) => {
   selectedKeys.value = [to.path]
 })
@@ -106,7 +110,6 @@ const originItems = [
 ]
 
 
-// 过滤菜单项
 const filterMenus = (menus = [] as MenuProps['items']) => {
   return menus?.filter((menu) => {
     const menuKey = menu?.key as string
@@ -123,19 +126,14 @@ const filterMenus = (menus = [] as MenuProps['items']) => {
 const menuItems = computed<MenuProps['items']>(() => filterMenus(originItems))
 
 
-// 处理菜单点击
 const handleMenuClick: MenuProps['onClick'] = (e) => {
   const key = e.key as string
   selectedKeys.value = [key]
-  // 跳转到对应页面
   if (key.startsWith('/')) {
     router.push(key)
   }
-
 }
 
-
-// 退出登录
 
 const doLogout = async () => {
   const res = await userLogout()
@@ -150,20 +148,36 @@ const doLogout = async () => {
   }
 }
 
+// Theme cycling: light -> dark -> system
+const themeTooltip = computed(() => {
+  const labels: Record<ThemeMode, string> = {
+    light: '浅色模式 (点击切换)',
+    dark: '深色模式 (点击切换)',
+    system: '跟随系统 (点击切换)',
+  }
+  return labels[themeStore.mode]
+})
 
-
+const handleThemeToggle = () => {
+  const order: ThemeMode[] = ['light', 'dark', 'system']
+  const currentIdx = order.indexOf(themeStore.mode)
+  const nextIdx = currentIdx >= 0 ? (currentIdx + 1) % order.length : 0
+  const nextMode = order[nextIdx] as ThemeMode
+  themeStore.setMode(nextMode)
+}
 </script>
 
 <style scoped>
 .header {
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-sm);
   padding: 0;
   height: 64px;
   line-height: 64px;
   position: sticky;
   top: 0;
   z-index: 1000;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .header-content {
@@ -193,7 +207,7 @@ const doLogout = async () => {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #1890ff;
+  color: var(--color-primary);
   white-space: nowrap;
 }
 
@@ -215,12 +229,24 @@ const doLogout = async () => {
 .right-section {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   min-width: 200px;
   justify-content: flex-end;
 }
 
-/* 响应式设计 */
+.theme-toggle-btn {
+  font-size: 18px;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle-btn:hover {
+  color: var(--color-primary);
+}
+
+/* Responsive */
 @media (max-width: 768px) {
   .header-content {
     padding: 0 16px;

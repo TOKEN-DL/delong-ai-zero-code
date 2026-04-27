@@ -1,25 +1,33 @@
 <script setup lang="ts">
 import BasicLayout from '@/layouts/BasicLayout.vue'
+import { useLoginUserStore } from '@/stores/loginUser.ts'
+import { useThemeStore } from '@/stores/themeStore'
+import { theme } from 'ant-design-vue'
+import { computed } from 'vue'
 
-
-import {useLoginUserStore} from "@/stores/loginUser.ts";
-
-const loginUserStore = useLoginUserStore();
-
+const loginUserStore = useLoginUserStore()
 loginUserStore.fetchLoginUser()
 
+const themeStore = useThemeStore()
 
-
+const antTheme = computed(() => ({
+  algorithm: themeStore.isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
+  token: {
+    colorPrimary: themeStore.isDark ? '#2997ff' : '#0071e3',
+    borderRadius: 8,
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', 'Segoe UI', Roboto, Arial, sans-serif",
+  },
+}))
 </script>
 
 <template>
-  <BasicLayout />
+  <a-config-provider :theme="antTheme">
+    <BasicLayout />
+  </a-config-provider>
 </template>
 
-
-
 <style>
-/* 全局样式重置 */
+/* Global style resets */
 * {
   margin: 0;
   padding: 0;
@@ -29,9 +37,8 @@ loginUserStore.fetchLoginUser()
 html,
 body {
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-    'Noto Color Emoji';
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue',
+    'Segoe UI', Roboto, Arial, sans-serif;
 }
 
 #app {

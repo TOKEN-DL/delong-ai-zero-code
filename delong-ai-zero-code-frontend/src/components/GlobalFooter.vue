@@ -19,13 +19,14 @@
 
 <style scoped>
 .footer {
-  background: #001529;
-  color: rgba(255, 255, 255, 0.85);
+  background: var(--bg-surface);
+  color: var(--color-text-muted);
   text-align: center;
   padding: 16px 50px;
   position: sticky;
   bottom: 0;
   z-index: 999;
+  border-top: 1px solid var(--color-border-light);
 }
 
 .footer-content {
@@ -39,21 +40,19 @@
 }
 
 .copyright {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-text-muted);
 }
 
 .author-link {
-  color: #1890ff;
+  color: var(--color-primary);
   text-decoration: none;
-  transition: color 0.3s;
+  transition: color 0.2s;
 }
 
 .author-link:hover {
-  color: #40a9ff;
   text-decoration: underline;
 }
 
-/* 响应式设计 */
 @media (max-width: 576px) {
   .footer {
     padding: 12px 24px;

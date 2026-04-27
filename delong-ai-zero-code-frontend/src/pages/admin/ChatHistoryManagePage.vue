@@ -210,23 +210,25 @@ onMounted(() => {
 #ChatHistoryManagePage {
   min-height: 100vh;
   padding: 24px;
-  background: #f5f5f5;
+  background: var(--bg-surface);
 }
 
 .container {
   max-width: 1800px;
   margin: 0 auto;
-  background: #fff;
-  border-radius: 8px;
+  background: var(--color-card-bg);
+  border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
 }
 
 .search-section {
-  background: #fafafa;
+  background: var(--bg-surface);
   padding: 20px;
-  border-radius: 6px;
+  border-radius: 8px;
   margin-bottom: 24px;
+  border: 1px solid var(--color-border-light);
 }
 
 .message-text {
@@ -234,7 +236,7 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 :deep(.ant-table) {
@@ -243,17 +245,8 @@ onMounted(() => {
 }
 
 :deep(.ant-table-thead > tr > th) {
-  background: #fafafa;
+  background: var(--bg-surface) !important;
   font-weight: 600;
-}
-
-:deep(.ant-btn-primary) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-}
-
-:deep(.ant-btn-primary:hover) {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
 
 @media (max-width: 768px) {

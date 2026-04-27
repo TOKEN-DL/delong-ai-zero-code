@@ -2,7 +2,7 @@
   <div id="userLoginPage">
     <div class="login-container">
       <div class="header">
-        <h2 class="title">德龙AI 应用生成</h2>
+        <h2 class="title">时零AI 应用生成</h2>
         <div class="desc">不写一行代码，生成完整应用</div>
       </div>
 
@@ -97,17 +97,18 @@ const handleSubmit = async (values: any) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--auth-bg);
   padding: 20px;
 }
 
 .login-container {
   width: 100%;
   max-width: 400px;
-  background: #fff;
-  border-radius: 12px;
+  background: var(--auth-card-bg);
+  border-radius: 16px;
   padding: 40px 30px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-border-light);
 }
 
 .header {
@@ -118,25 +119,26 @@ const handleSubmit = async (values: any) => {
 .title {
   font-size: 24px;
   font-weight: 600;
-  color: #333;
+  color: var(--color-text-primary);
   margin-bottom: 12px;
+  letter-spacing: -0.01em;
 }
 
 .desc {
   font-size: 14px;
-  color: #666;
+  color: var(--color-text-muted);
   margin-bottom: 0;
 }
 
 .tips {
   text-align: center;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 14px;
   margin-bottom: 24px;
 }
 
 .link {
-  color: #1890ff;
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 500;
   cursor: pointer;
@@ -144,7 +146,7 @@ const handleSubmit = async (values: any) => {
 
 .link:hover {
   text-decoration: underline;
-  color: #40a9ff;
+  color: var(--color-primary-hover);
 }
 
 .tips a {
@@ -153,6 +155,17 @@ const handleSubmit = async (values: any) => {
 
 :deep(.ant-form-item) {
   margin-bottom: 20px;
+}
+
+:deep(.ant-input),
+:deep(.ant-input-password .ant-input) {
+  display: flex;
+  align-items: center;
+}
+
+:deep(.ant-input-affix-wrapper) {
+  display: flex;
+  align-items: center;
 }
 
 :deep(.ant-btn-primary) {

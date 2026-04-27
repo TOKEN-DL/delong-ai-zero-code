@@ -9,13 +9,7 @@ spring:
 
   profiles:
     active: local
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      password:
-      ttl: 3600
-      database: 0
+
 
 
 server:
@@ -33,10 +27,7 @@ springdoc:
   group-configs:
       - group: 'default'
         packages-to-scan: com.token.delongaizerocode.controller
-knife4j:
-  enable: true
-  setting:
-    language: zh_cn
+
 # 监控
 management:
   endpoints:

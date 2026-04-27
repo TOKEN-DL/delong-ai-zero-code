@@ -1,55 +1,127 @@
-/* color palette from <https://github.com/vuejs/theme> */
-:root {
-  --vt-c-white: #ffffff;
-  --vt-c-white-soft: #f8f8f8;
-  --vt-c-white-mute: #f2f2f2;
+/* Apple-inspired theme — light mode */
+:root,
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg-primary: #ffffff;
+  --bg-surface: #f5f5f7;
+  --bg-elevated: #e8e8ed;
 
-  --vt-c-black: #181818;
-  --vt-c-black-soft: #222222;
-  --vt-c-black-mute: #282828;
+  /* Primary (Apple Blue) */
+  --color-primary: #0071e3;
+  --color-primary-hover: #0077ed;
+  --color-primary-light: rgba(0, 113, 227, 0.08);
+  --color-primary-bg: #e8f0fe;
 
-  --vt-c-indigo: #2c3e50;
+  /* Text */
+  --color-text-primary: #1d1d1f;
+  --color-text-secondary: #424245;
+  --color-text-muted: #86868b;
+  --color-text-inverse: #ffffff;
 
-  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
-  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
-  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
-  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
+  /* Borders */
+  --color-border: #d2d2d7;
+  --color-border-light: #e8e8ed;
 
-  --vt-c-text-light-1: var(--vt-c-indigo);
-  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
-  --vt-c-text-dark-1: var(--vt-c-white);
-  --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.1);
+
+  /* Accent colors */
+  --color-success: #34c759;
+  --color-warning: #ff9f0a;
+  --color-danger: #ff3b30;
+  --color-featured: #ff9f0a;
+
+  /* Code blocks */
+  --color-code-bg: #1d1d1f;
+  --color-code-header: #2d2d2f;
+  --color-code-border: #3a3a3c;
+  --color-code-text: #f5f5f7;
+
+  /* Message bubbles */
+  --color-user-msg-bg: #0071e3;
+  --color-user-msg-text: #ffffff;
+  --color-ai-msg-bg: #f5f5f7;
+  --color-ai-msg-text: #1d1d1f;
+
+  /* Hero section */
+  --hero-bg: linear-gradient(180deg, #f5f5f7 0%, #ffffff 100%);
+  --hero-title: linear-gradient(135deg, #1d1d1f 0%, #424245 100%);
+
+  /* Card */
+  --color-card-bg: #ffffff;
+  --color-card-hover-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  --color-card-border: #e8e8ed;
+  --color-card-hover-border: #d2d2d7;
+
+  /* Input */
+  --color-input-bg: #ffffff;
+  --color-input-border: #d2d2d7;
+  --color-input-focus-border: #0071e3;
+  --color-input-placeholder: #86868b;
+
+  /* Login/Register background */
+  --auth-bg: #f5f5f7;
+  --auth-card-bg: #ffffff;
 }
 
-/* semantic color variables for this project */
-:root {
-  --color-background: var(--vt-c-white);
-  --color-background-soft: var(--vt-c-white-soft);
-  --color-background-mute: var(--vt-c-white-mute);
+/* Apple-inspired theme — dark mode */
+[data-theme="dark"] {
+  --bg-primary: #000000;
+  --bg-surface: #1d1d1f;
+  --bg-elevated: #2d2d2f;
 
-  --color-border: var(--vt-c-divider-light-2);
-  --color-border-hover: var(--vt-c-divider-light-1);
+  --color-primary: #2997ff;
+  --color-primary-hover: #4db2ff;
+  --color-primary-light: rgba(41, 151, 255, 0.12);
+  --color-primary-bg: #1a2a3a;
 
-  --color-heading: var(--vt-c-text-light-1);
-  --color-text: var(--vt-c-text-light-1);
+  --color-text-primary: #f5f5f7;
+  --color-text-secondary: #d2d2d7;
+  --color-text-muted: #86868b;
+  --color-text-inverse: #1d1d1f;
 
-  --section-gap: 160px;
+  --color-border: #424245;
+  --color-border-light: #2d2d2f;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
+
+  --color-success: #30d158;
+  --color-warning: #ff9f0a;
+  --color-danger: #ff453a;
+  --color-featured: #ff9f0a;
+
+  --color-code-bg: #1d1d1f;
+  --color-code-header: #2d2d2f;
+  --color-code-border: #3a3a3c;
+  --color-code-text: #f5f5f7;
+
+  --color-user-msg-bg: #2997ff;
+  --color-user-msg-text: #ffffff;
+  --color-ai-msg-bg: #1d1d1f;
+  --color-ai-msg-text: #f5f5f7;
+
+  --hero-bg: linear-gradient(180deg, #1d1d1f 0%, #000000 100%);
+  --hero-title: linear-gradient(135deg, #f5f5f7 0%, #d2d2d7 100%);
+
+  --color-card-bg: #1d1d1f;
+  --color-card-hover-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  --color-card-border: #2d2d2f;
+  --color-card-hover-border: #424245;
+
+  --color-input-bg: #1d1d1f;
+  --color-input-border: #424245;
+  --color-input-focus-border: #2997ff;
+  --color-input-placeholder: #6e6e73;
+
+  --auth-bg: #000000;
+  --auth-card-bg: #1d1d1f;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: var(--vt-c-black);
-    --color-background-soft: var(--vt-c-black-soft);
-    --color-background-mute: var(--vt-c-black-mute);
-
-    --color-border: var(--vt-c-divider-dark-2);
-    --color-border-hover: var(--vt-c-divider-dark-1);
-
-    --color-heading: var(--vt-c-text-dark-1);
-    --color-text: var(--vt-c-text-dark-2);
-  }
-}
-
+/* Global resets */
 *,
 *::before,
 *::after {
@@ -60,27 +132,36 @@
 
 body {
   min-height: 100vh;
-  color: var(--color-text);
-  background: var(--color-background);
-  transition:
-    color 0.5s,
-    background-color 0.5s;
+  color: var(--color-text-primary);
+  background: var(--bg-primary);
+  transition: color 0.3s, background-color 0.3s;
   line-height: 1.6;
   font-family:
-    Inter,
     -apple-system,
     BlinkMacSystemFont,
+    'SF Pro Display',
+    'SF Pro Text',
+    'Helvetica Neue',
     'Segoe UI',
     Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
+    Arial,
     sans-serif;
   font-size: 15px;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth theme transition for all themed properties */
+*,
+*::before,
+*::after {
+  transition: background-color 0.3s, border-color 0.3s, color 0.15s, box-shadow 0.3s;
+}
+
+/* Override: disable transitions during initial load to prevent flash */
+[data-theme-transitioning] *,
+[data-theme-transitioning] *::before,
+[data-theme-transitioning] *::after {
+  transition: none !important;
 }

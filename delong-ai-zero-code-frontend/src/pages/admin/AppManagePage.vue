@@ -332,28 +332,30 @@ onMounted(() => {
 #AppManagePage {
   min-height: 100vh;
   padding: 24px;
-  background: #f5f5f5;
+  background: var(--bg-surface);
 }
 
 .container {
   max-width: 1800px;
   margin: 0 auto;
-  background: #fff;
-  border-radius: 8px;
+  background: var(--color-card-bg);
+  border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
 }
 
 .search-section {
-  background: #fafafa;
+  background: var(--bg-surface);
   padding: 20px;
-  border-radius: 6px;
+  border-radius: 8px;
   margin-bottom: 24px;
+  border: 1px solid var(--color-border-light);
 }
 
 .app-name {
   font-weight: 600;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .cover-preview {
@@ -362,10 +364,10 @@ onMounted(() => {
 }
 
 .no-cover {
-  color: #999;
+  color: var(--color-text-muted);
   font-size: 12px;
   padding: 8px 12px;
-  background: #f5f5f5;
+  background: var(--bg-surface);
   border-radius: 4px;
 }
 
@@ -382,17 +384,8 @@ onMounted(() => {
 }
 
 :deep(.ant-table-thead > tr > th) {
-  background: #fafafa;
+  background: var(--bg-surface) !important;
   font-weight: 600;
-}
-
-:deep(.ant-btn-primary) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-}
-
-:deep(.ant-btn-primary:hover) {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
 
 @media (max-width: 768px) {
